@@ -18,3 +18,17 @@ def contourFactorStruct(contour):
     perimeter = cv2.arcLength(contour, True)  
     structure = (perimeter ** 2) / contour_area if contour_area != 0 else 0
     return structure
+
+
+def contourAnisometry(contour):
+    
+    if len(contour) >= 5: 
+        ellipse = cv2.fitEllipse(contour)
+        MA, ma = ellipse[1]  
+        aspect_ratio = MA / ma if ma != 0 else 0
+
+        anisometry = aspect_ratio
+    else:
+        anisometry = 0
+
+    return anisometry
