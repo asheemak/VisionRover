@@ -45,3 +45,15 @@ def contourAxisMinorLength(contour):
         length = 0
 
     return length
+
+
+def contourAxisMajorLength(contour):
+
+    if len(contour) >= 5:
+        ellipse = cv2.fitEllipse(contour)
+        _, (MA, ma), _ = ellipse
+        length = max(MA, ma)
+    else:
+        length = 0
+    
+    return length
