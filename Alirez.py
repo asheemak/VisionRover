@@ -57,3 +57,9 @@ def contourAxisMajorLength(contour):
         length = 0
     
     return length
+
+
+def contourOuterRadius(contour):
+
+    _, radius = cv2.minEnclosingCircle(contour)
+    return radius
