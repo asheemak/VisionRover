@@ -32,3 +32,16 @@ def contourAnisometry(contour):
         anisometry = 0
 
     return anisometry
+
+
+
+def contourAxisMinorLength(contour):
+
+    if len(contour) >= 5:
+        ellipse = cv2.fitEllipse(contour)
+        _, (MA, ma), _ = ellipse
+        length = min(MA, ma)
+    else:
+        length = 0
+
+    return length
