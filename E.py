@@ -48,3 +48,28 @@ def contourCentroid(contour):
         cX, cY = 0, 0       
     centroid = [cX, cY]
     return centroid
+
+def prewitt(image):
+    prewitt_x = cv2.filter2D(image, -1, np.array([[1, 0, -1], [1, 0, -1], [1, 0, -1]]))
+    prewitt_y = cv2.filter2D(image, -1, np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]]))
+    return prewitt_x,prewitt_y
+
+def roberts(image):
+    roberts_x = cv2.filter2D(image, -1, np.array([[1, 0], [0, -1]]))
+    roberts_y = cv2.filter2D(image, -1, np.array([[0, 1], [-1, 0]]))
+    roberts_edges = np.sqrt(roberts_x**2 + roberts_y**2)
+    return roberts_x, roberts_y, roberts_edges
+
+def laplacianOfGaussian(image, sigma=1):
+
+    blurred = cv2.GaussianBlur(image, (0, 0), sigma)
+    log_edges = cv2.Laplacian(blurred, cv2.CV_64F)
+    log_edges = np.abs(log_edges)
+    
+    return log_edges
+
+def differenceOfGaussian(image, sigma1=1, sigma2=2):
+    blurred1 = cv2.GaussianBlur(image, (0, 0), sigma1)
+    blurred2 = cv2.GaussianBlur(image, (0, 0), sigma2)
+    dog_edges = blurred1 - blurred2
+    return dog_edges
