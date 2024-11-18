@@ -94,7 +94,6 @@ def contourInnerRectArea(contour):
 
 def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
     def get_line_coordinates(start_point, end_point):
-
         x1, y1 = start_point
         x2, y2 = end_point
         coordinates = []
@@ -103,7 +102,8 @@ def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
         sx = 1 if x1 < x2 else -1
         sy = 1 if y1 < y2 else -1
         err = dx - dy
-        while True:
+
+        for _ in range(max(dx, dy) + 1):  
             coordinates.append((x1, y1))
             if x1 == x2 and y1 == y2:
                 break
@@ -114,6 +114,7 @@ def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
             if e2 < dx:
                 err += dx
                 y1 += sy
+
         return coordinates
 
     def get_line_profile(image, start_point, end_point):
