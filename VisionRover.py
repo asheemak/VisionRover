@@ -131,3 +131,17 @@ def differenceOfGaussian(image, sigma1=1, sigma2=2):
     blurred2 = cv2.GaussianBlur(image, (0, 0), sigma2)
     dog_edges = blurred1 - blurred2
     return dog_edges
+
+def contourEccentricity(contour):
+    if len(contour) >= 5:  
+        ellipse = cv2.fitEllipse(contour)
+        _, (MA, ma), _ = ellipse  
+        eccentricity = MA / ma
+    else:
+        eccentricity = 0
+    return eccentricity
+
+def contourInnerRectArea(contour):
+    inner_rect = cv2.minAreaRect(contour)
+    innerRect = inner_rect[1][0]* inner_rect[1][1]
+    return innerRectArea
