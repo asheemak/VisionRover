@@ -83,3 +83,9 @@ def contourEccentricity(contour):
     else:
         eccentricity = 0
     return eccentricity
+
+def ContourInnerRectArea(contour):
+
+    inner_rect = cv2.minAreaRect(contour)
+    innerRect = inner_rect[1][0]* inner_rect[1][1]
+    return innerRectArea
