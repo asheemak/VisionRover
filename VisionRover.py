@@ -145,3 +145,44 @@ def contourInnerRectArea(contour):
     inner_rect = cv2.minAreaRect(contour)
     innerRectArea = inner_rect[1][0]* inner_rect[1][1]
     return innerRectArea
+
+def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
+    def get_line_coordinates(start_point, end_point):
+        x1, y1 = start_point
+        x2, y2 = end_point
+        coordinates = []
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+
+        for _ in range(max(dx, dy) + 1):  
+            coordinates.append((x1, y1))
+            if x1 == x2 and y1 == y2:
+                break
+            e2 = err * 2
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+
+        return coordinates
+
+    def get_line_profile(image, start_point, end_point):
+
+        coordinates = get_line_coordinates(start_point, end_point)
+        profile = [image[y, x] for x, y in coordinates if 0 <= x < image.shape[1] and 0 <= y < image.shape[0]]
+        return profile, coordinates
+
+    line_thickness = 1
+    overlayImage = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    cv2.line(overlayImage, start_point, end_point, lineColor, line_thickness)
+    profile, line_coordinates = get_line_profile(image, start_point, end_point)
+    lineLength = np.hypot(end_point[0] - start_point[0], end_point[1] - start_point[1])
+    lineAngle = np.arctan2(end_point[1] - start_point[1], end_point[0] - start_point[0]) * 180 / np.pi
+    secondDerivative = np.gradient(np.gradient(profile))
+
+    return overlayImage, profile, secondDerivative, lineLength, lineAngle
