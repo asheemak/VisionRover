@@ -133,3 +133,41 @@ def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
     deriv1 = np.gradient(profile)
 
     return img, profile, deriv1, deriv2, lineLength, lineAngle
+
+
+def randomForest(features, labels, maxDepth=10, testRatio=0.2):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
+    indices = np.arange(features.shape[0])
+    np.random.shuffle(indices)
+    features, labels = features[indices], labels[indices]
+    
+    splitIndex = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIndex], features[splitIndex:]
+    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
+    
+    rfModel = cv2.ml.RTrees_create()
+    rfModel.setMaxDepth(maxDepth)
+    rfModel.setMinSampleCount(2)
+    rfModel.setRegressionAccuracy(0)
+    rfModel.setUseSurrogates(False)
+    rfModel.setMaxCategories(len(np.unique(labels)))
+    rfModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-6))
+    rfModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
+    
+    _, trainPreds = rfModel.predict(XTrain)
+    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
+    
+    numClasses = len(np.unique(labels))
+    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
+        trainConfusionMx[trueLabel, int(predLabel)] += 1
+    
+    _, testPreds = rfModel.predict(XTest)
+    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
+    
+    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
+        testConfusionMx[trueLabel, int(predLabel)] += 1
+    
+    return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
