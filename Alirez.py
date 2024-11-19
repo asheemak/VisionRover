@@ -131,3 +131,10 @@ def panoramaStichting(leftView, rightView):
     stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
 
     return stitchedImage
+
+
+def imageNumOfHoles(image):
+    all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+    holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
+    return holes
