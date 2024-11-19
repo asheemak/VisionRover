@@ -124,11 +124,12 @@ def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
         return profile, coordinates
 
     line_thickness = 1
-    overlayImage = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    cv2.line(overlayImage, start_point, end_point, lineColor, line_thickness)
+    img = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    cv2.line(img, start_point, end_point, lineColor, line_thickness)
     profile, line_coordinates = get_line_profile(image, start_point, end_point)
     lineLength = np.hypot(end_point[0] - start_point[0], end_point[1] - start_point[1])
     lineAngle = np.arctan2(end_point[1] - start_point[1], end_point[0] - start_point[0]) * 180 / np.pi
-    secondDerivative = np.gradient(np.gradient(profile))
+    deriv2 = np.gradient(np.gradient(profile))
+    deriv1 = np.gradient(profile)
 
-    return overlayImage, profile, secondDerivative, lineLength, lineAngle
+    return img, profile, deriv1, deriv2, lineLength, lineAngle
