@@ -95,3 +95,39 @@ def minMaxLoc(input):
         maxLoc = np.where(input == maxVal)
 
         return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
+
+
+def panoramaStichting(leftView, rightView):
+
+    if len(leftView.shape) == 3:
+        if leftView.shape[2] == 3:
+            gray1 = cv2.cvtColor(leftView,cv2.COLOR_BGR2GRAY)
+        elif leftView.shape[2] == 4:
+            gray1 = cv2.cvtColor(leftView,cv2.COLOR_BGRA2GRAY)
+
+    if len(rightView.shape) == 3:
+        if rightView.shape[2] == 3:
+            gray2 = cv2.cvtColor(rightView, cv2.COLOR_BGR2GRAY)
+        elif rightView.shape[2] == 4:
+            gray2 = cv2.cvtColor(rightView,cv2.COLOR_BGRA2GRAY)
+    
+
+    sift = cv2.SIFT_create()
+    kp1, desc1 = sift.detectAndCompute(gray1, None)
+    kp2, desc2 = sift.detectAndCompute(gray2, None)
+
+
+    matches = cv2.BFMatcher(cv2.NORM_L2, True).match(desc1, desc2)
+    
+    src_pts = np.float32([kp1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+    dst_pts = np.float32([kp2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+
+    H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+
+    H_inv = np.linalg.inv(H)
+
+    stitchedImage = cv2.warpPerspective(rightView, H_inv, (leftView.shape[1] + rightView.shape[1], leftView.shape[0]))
+
+    stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
+
+    return stitchedImage
