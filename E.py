@@ -135,7 +135,7 @@ def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
     return img, profile, deriv1, deriv2, lineLength, lineAngle
 
 
-def randomForest(features, labels, maxDepth=10, testRatio=0.2):
+def randomForest(features, labels, maxDepth, testRatio):
     features = np.array(features, dtype=np.float32)
     labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
     indices = np.arange(features.shape[0])
@@ -171,3 +171,40 @@ def randomForest(features, labels, maxDepth=10, testRatio=0.2):
         testConfusionMx[trueLabel, int(predLabel)] += 1
     
     return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
+
+
+def svm(features, labels, kernelType, C, gamma, testRatio):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
+    indices = np.arange(features.shape[0])
+    np.random.shuffle(indices)
+    features, labels = features[indices], labels[indices]
+
+    splitIndex = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIndex], features[splitIndex:]
+    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
+
+    svmModel = cv2.ml.SVM_create()
+    svmModel.setKernel(kernelType)  
+    svmModel.setC(C)  
+    svmModel.setGamma(gamma)  
+    svmModel.setType(cv2.ml.SVM_C_SVC)  
+    svmModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 1000, 1e-6))
+    svmModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
+
+    _, trainPreds = svmModel.predict(XTrain)
+    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
+
+    numClasses = len(np.unique(labels))
+    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
+        trainConfusionMx[trueLabel, int(predLabel)] += 1
+
+    _, testPreds = svmModel.predict(XTest)
+    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
+
+    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
+        testConfusionMx[trueLabel, int(predLabel)] += 1
+
+    return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
