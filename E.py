@@ -92,10 +92,10 @@ def contourInnerRectArea(contour):
 
 
 
-def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
-    def get_line_coordinates(start_point, end_point):
-        x1, y1 = start_point
-        x2, y2 = end_point
+def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
+    def get_line_coordinates(startPoint, endPoint):
+        x1, y1 = startPoint
+        x2, y2 = endPoint
         coordinates = []
         dx = abs(x2 - x1)
         dy = abs(y2 - y1)
@@ -125,10 +125,10 @@ def lineProfile(image, start_point, end_point, lineColor=(0, 0, 255)):
 
     line_thickness = 1
     img = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-    cv2.line(img, start_point, end_point, lineColor, line_thickness)
-    profile, line_coordinates = get_line_profile(image, start_point, end_point)
-    lineLength = np.hypot(end_point[0] - start_point[0], end_point[1] - start_point[1])
-    lineAngle = np.arctan2(end_point[1] - start_point[1], end_point[0] - start_point[0]) * 180 / np.pi
+    cv2.line(img, startPoint, endPoint, lineColor, line_thickness)
+    profile, line_coordinates = get_line_profile(image, startPoint, endPoint)
+    lineLength = np.hypot(endPoint[0] - startPoint[0], endPoint[1] - startPoint[1])
+    lineAngle = np.arctan2(endPoint[1] - startPoint[1], endPoint[0] - startPoint[0]) * 180 / np.pi
     deriv2 = np.gradient(np.gradient(profile))
     deriv1 = np.gradient(profile)
 
