@@ -63,3 +63,35 @@ def contourOuterRadius(contour):
 
     _, radius = cv2.minEnclosingCircle(contour)
     return radius
+
+
+
+def minMaxLoc(input):
+    if len(input.shape) == 3:  # RGB or RGBA image
+        minVal_per_channel = []
+        maxVal_per_channel = []
+        minLoc_per_channel = []
+        maxLoc_per_channel = []
+
+        for i in range(input.shape[2]):
+
+            minVal = np.min(input[:,:,i])
+            maxVal = np.max(input[:,:,i])
+            minLoc = np.where(input[:,:,i] == minVal)
+            maxLoc = np.where(input[:,:,i] == maxVal)
+
+            minVal_per_channel.append(minVal)
+            maxVal_per_channel.append(maxVal)
+            minLoc_per_channel.append((minLoc[0][0], minLoc[1][0]))
+            maxLoc_per_channel.append((maxLoc[0][0], maxLoc[1][0]))
+
+        return minVal_per_channel, maxVal_per_channel, minLoc_per_channel, maxLoc_per_channel
+    
+    else:  # Grayscale image
+
+        minVal = np.min(input)
+        maxVal = np.max(input)
+        minLoc = np.where(input == minVal)
+        maxLoc = np.where(input == maxVal)
+
+        return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
