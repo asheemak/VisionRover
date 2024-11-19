@@ -117,9 +117,9 @@ def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
 
         return coordinates
 
-    def get_line_profile(image, start_point, end_point):
+    def get_line_profile(image, startPoint, endPoint):
 
-        coordinates = get_line_coordinates(start_point, end_point)
+        coordinates = get_line_coordinates(startPoint, endPoint)
         profile = [image[y, x] for x, y in coordinates if 0 <= x < image.shape[1] and 0 <= y < image.shape[0]]
         return profile, coordinates
 
