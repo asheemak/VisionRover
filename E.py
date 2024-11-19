@@ -208,3 +208,10 @@ def svm(features, labels, kernelType, C, gamma, testRatio):
         testConfusionMx[trueLabel, int(predLabel)] += 1
 
     return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
+
+def imageEdgeAngle(image):
+    sobelX = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
+    sobelY = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+    edge_angles = np.arctan2(sobelY, sobelX) * 180 / np.pi
+    meanEdgeAngle = np.mean(edge_angles)
+    return meanEdgeAngle
