@@ -118,7 +118,7 @@ def roberts(image):
     roberts_edges = np.sqrt(roberts_x**2 + roberts_y**2)
     return roberts_x, roberts_y, roberts_edges
 
-def laplacianOfGaussian(image, sigma=1):
+def laplacianOfGaussian(image, sigma):
 
     blurred = cv2.GaussianBlur(image, (0, 0), sigma)
     log_edges = cv2.Laplacian(blurred, cv2.CV_64F)
@@ -126,7 +126,7 @@ def laplacianOfGaussian(image, sigma=1):
     
     return log_edges
 
-def differenceOfGaussian(image, sigma1=1, sigma2=2):
+def differenceOfGaussian(image, sigma1, sigma2):
     blurred1 = cv2.GaussianBlur(image, (0, 0), sigma1)
     blurred2 = cv2.GaussianBlur(image, (0, 0), sigma2)
     dog_edges = blurred1 - blurred2
@@ -146,7 +146,7 @@ def contourInnerRectArea(contour):
     innerRectArea = inner_rect[1][0]* inner_rect[1][1]
     return innerRectArea
 
-def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
+def lineProfile(image, startPoint, endPoint, lineColor):
     def get_line_coordinates(startPoint, endPoint):
         x1, y1 = startPoint
         x2, y2 = endPoint
@@ -187,3 +187,41 @@ def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
     deriv1 = np.gradient(profile)
 
     return img, profile, deriv1, deriv2, lineLength, lineAngle
+
+
+def randomForest(features, labels, maxDepth, testRatio):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
+    indices = np.arange(features.shape[0])
+    np.random.shuffle(indices)
+    features, labels = features[indices], labels[indices]
+    
+    splitIndex = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIndex], features[splitIndex:]
+    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
+    
+    rfModel = cv2.ml.RTrees_create()
+    rfModel.setMaxDepth(maxDepth)
+    rfModel.setMinSampleCount(2)
+    rfModel.setRegressionAccuracy(0)
+    rfModel.setUseSurrogates(False)
+    rfModel.setMaxCategories(len(np.unique(labels)))
+    rfModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-6))
+    rfModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
+    
+    _, trainPreds = rfModel.predict(XTrain)
+    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
+    
+    numClasses = len(np.unique(labels))
+    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
+        trainConfusionMx[trueLabel, int(predLabel)] += 1
+    
+    _, testPreds = rfModel.predict(XTest)
+    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
+    
+    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
+        testConfusionMx[trueLabel, int(predLabel)] += 1
+    
+    return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
