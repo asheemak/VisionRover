@@ -220,3 +220,23 @@ def imageEdgeDensity(image, firstThresh, secondThresh):
     edges = cv2.Canny(image, firstThresh, secondThresh)
     edgeDensity = np.count_nonzero(edges) / edges.size
     return edgeDensity
+
+
+
+def contrastAdjustment(image, in_ranges, out_ranges, gammas, alphas, betas):
+    adjustedImage = np.zeros_like(image, dtype=np.float32)
+    for i, (in_range, out_range) in enumerate(zip(in_ranges, out_ranges)):
+        in_min, in_max = in_range
+        out_min, out_max = out_range
+        gamma = gammas[i]
+        alpha = alphas[i]
+        beta = betas[i]
+        mask = (image >= in_min) & (image <= in_max)
+        normalized = (image.astype(np.float32) - in_min) / (in_max - in_min)
+        normalized = np.clip(normalized, 0, 1)  
+        gamma_corrected = np.power(normalized, gamma) * mask
+        scaled = gamma_corrected * (out_max - out_min) + out_min
+        transformed = alpha * scaled + beta
+        adjustedImage[mask] = transformed[mask]
+
+    return adjustedImage
