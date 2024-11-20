@@ -260,6 +260,36 @@ def minMaxLoc(input):
 
 def panoramaStichting(leftView, rightView):
 
+    def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
+
+        rows1, cols1, _ = left_image.shape
+        rows2, cols2, _ = right_image.shape
+
+        matchImage = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
+        matchImage[:rows1, :cols1, :] = np.dstack([left_image])
+        matchImage[:rows2, cols1:cols1 + cols2, :] = np.dstack([right_image])
+
+        matchImage2 = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
+        matchImage2[:rows1, :cols1, :] = np.dstack([left_image])
+        matchImage2[:rows2, cols1:cols1 + cols2, :] = np.dstack([right_image])
+
+        # draw lines
+        for i in range(src_point.shape[0]):
+            x1, y1 = src_point[i][0]
+            x2, y2 = dst_point[i][0]
+
+            point1 = (int(x1), int(y1))
+            point2 = (int(x2 + left_image.shape[1]), int(y2))
+
+            if mask[i][0] == 1:
+                cv2.line(matchImage, point1, point2, (0, 255, 0), 1)
+            else :
+                cv2.line(matchImage2, point1, point2, (255, 0, 0), 1)
+
+        return matchImage, matchImage2
+    
+
+
     if len(leftView.shape) == 3:
         if leftView.shape[2] == 3:
             gray1 = cv2.cvtColor(leftView,cv2.COLOR_BGR2GRAY)
@@ -270,9 +300,9 @@ def panoramaStichting(leftView, rightView):
         if rightView.shape[2] == 3:
             gray2 = cv2.cvtColor(rightView, cv2.COLOR_BGR2GRAY)
         elif rightView.shape[2] == 4:
-            gray2 = cv2.cvtColor(rightView,cv2.COLOR_BGRA2GRAY)
-    
-
+            gray2 = cv2.cvtColor(rightView,cv2.COLOR_BGRA2GRAY) 
+        
+        
     sift = cv2.SIFT_create()
     kp1, desc1 = sift.detectAndCompute(gray1, None)
     kp2, desc2 = sift.detectAndCompute(gray2, None)
@@ -285,13 +315,15 @@ def panoramaStichting(leftView, rightView):
 
     H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
+    Overlay_inlier_image, Overlay_outlier_image = __drawInliersOutliers(leftView, rightView, src_pts, dst_pts, mask)
+
     H_inv = np.linalg.inv(H)
 
     stitchedImage = cv2.warpPerspective(rightView, H_inv, (leftView.shape[1] + rightView.shape[1], leftView.shape[0]))
 
     stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
 
-    return stitchedImage
+    return Overlay_inlier_image, Overlay_outlier_image, stitchedImage
 
 
 def imageNumOfHoles(image):
