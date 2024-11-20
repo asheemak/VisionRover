@@ -202,3 +202,29 @@ def minAreaRect(points):
     sorted_corners = sorted(rectCorners, key=angle_from_centroid)
 
     return center, size, angle, sorted_corners
+
+
+def contourMoments(contour):
+    
+    M = cv2.moments(contour)
+
+    moments = []
+
+    for key in M:
+        moments.append(M[key]) 
+
+    if M['m00'] != 0:
+        cX = int(M['m10'] / M['m00'])
+        cY = int(M['m01'] / M['m00'])
+    else:
+        cX, cY = 0, 0
+
+    moments.append(cX)
+    moments.append(cY)
+
+    huMoments = cv2.HuMoments(M).flatten()
+
+    for i in range(7):
+        moments.append(huMoments[i]) 
+
+    return moments
