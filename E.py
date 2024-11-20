@@ -215,3 +215,8 @@ def imageEdgeAngle(image):
     edge_angles = np.arctan2(sobelY, sobelX) * 180 / np.pi
     meanEdgeAngle = np.mean(edge_angles)
     return meanEdgeAngle
+
+def imageEdgeDensity(image, firstThresh, secondThresh):
+    edges = cv2.Canny(image, firstThresh, secondThresh)
+    edgeDensity = np.count_nonzero(edges) / edges.size
+    return edgeDensity
