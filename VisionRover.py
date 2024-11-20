@@ -328,7 +328,6 @@ def panoramaStichting(leftView, rightView):
 
 def imageNumOfHoles(image):
     all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-
     holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
     return holes
 
@@ -374,3 +373,72 @@ def imageEdgeAngle(image):
     edge_angles = np.arctan2(sobelY, sobelX) * 180 / np.pi
     meanEdgeAngle = np.mean(edge_angles)
     return meanEdgeAngle
+
+
+def imageHolesArea(image):
+    all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    area = sum(cv2.contourArea(all_contours[i]) for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
+    return area
+
+def minAreaRect(points):
+    center, size, angle = cv2.minAreaRect(points)
+    radians = np.radians(angle)
+    halfWidth = size[0] / 2.0
+    halfHeight = size[1] / 2.0
+    relativePoints = [[-halfWidth, -halfHeight],[halfWidth, -halfHeight],[halfWidth, halfHeight],[-halfWidth, halfHeight]]
+    rectCorners = []
+    for point in relativePoints:
+        x = point[0]
+        y = point[1]
+        rectCorners.append(( int(center[0] + x * np.cos(radians) - y * np.sin(radians)), int(center[1] + x * np.sin(radians) + y * np.cos(radians))))
+
+    def angle_from_centroid(point):
+        return math.atan2(point[1] - center[1], point[0] - center[0])
+    
+    sorted_corners = sorted(rectCorners, key=angle_from_centroid)
+    return center, size, angle, sorted_corners
+
+
+def contourMoments(contour):
+    M = cv2.moments(contour)
+    moments = []
+    for key in M:
+        moments.append(M[key]) 
+
+    if M['m00'] != 0:
+        cX = int(M['m10'] / M['m00'])
+        cY = int(M['m01'] / M['m00'])
+    else:
+        cX, cY = 0, 0
+
+    moments.append(cX)
+    moments.append(cY)
+    huMoments = cv2.HuMoments(M).flatten()
+
+    for i in range(7):
+        moments.append(huMoments[i]) 
+
+    return moments
+
+
+def imageMoments(image, binaryImage):
+    M = cv2.moments(image, binaryImage)
+    moments = []
+
+    for key in M:
+        moments.append(M[key]) 
+
+    if M['m00'] != 0:
+        cX = int(M['m10'] / M['m00'])
+        cY = int(M['m01'] / M['m00'])
+    else:
+        cX, cY = 0, 0
+
+    moments.append(cX)
+    moments.append(cY)
+    huMoments = cv2.HuMoments(M).flatten()
+
+    for i in range(7):
+        moments.append(huMoments[i]) 
+
+    return moments
