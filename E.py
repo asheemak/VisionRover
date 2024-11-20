@@ -63,7 +63,7 @@ def roberts(image):
 def laplacianOfGaussian(image, sigma=1):
 
     blurred = cv2.GaussianBlur(image, (0, 0), sigma)
-    log_edges = cv2.Laplacian(blurred, cv2.CV_64F)
+    log_edges = cv2.Laplacian(blurred, cv2.CV_32F)
     log_edges = np.abs(log_edges)
     
     return log_edges
@@ -210,8 +210,8 @@ def svm(features, labels, kernelType, C, gamma, testRatio):
     return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
 
 def imageEdgeAngle(image):
-    sobelX = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
-    sobelY = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+    sobelX = cv2.Sobel(image, cv2.CV_32F, 1, 0, ksize=5)
+    sobelY = cv2.Sobel(image, cv2.CV_32F, 0, 1, ksize=5)
     edge_angles = np.arctan2(sobelY, sobelX) * 180 / np.pi
     meanEdgeAngle = np.mean(edge_angles)
     return meanEdgeAngle
