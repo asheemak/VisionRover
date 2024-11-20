@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+import math
 
 def contourSolidity(contour):
 	
@@ -176,3 +176,29 @@ def imageHolesArea(image):
 
     area = sum(cv2.contourArea(all_contours[i]) for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
     return area
+
+def minAreaRect(points):
+
+    center, size, angle = cv2.minAreaRect(points)
+    
+    radians = np.radians(angle)
+
+    halfWidth = size[0] / 2.0
+    halfHeight = size[1] / 2.0
+
+    relativePoints = [[-halfWidth, -halfHeight],[halfWidth, -halfHeight],[halfWidth, halfHeight],[-halfWidth, halfHeight]]
+
+    rectCorners = []
+    for point in relativePoints:
+        x = point[0]
+        y = point[1]
+        rectCorners.append(( int(center[0] + x * np.cos(radians) - y * np.sin(radians)), int(center[1] + x * np.sin(radians) + y * np.cos(radians))))
+
+
+    def angle_from_centroid(point):
+        return math.atan2(point[1] - center[1], point[0] - center[0])
+    
+
+    sorted_corners = sorted(rectCorners, key=angle_from_centroid)
+
+    return center, size, angle, sorted_corners
