@@ -138,3 +138,9 @@ def imageNumOfHoles(image):
 
     holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
     return holes
+
+def imageHolesArea(image):
+    all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+    area = sum(cv2.contourArea(all_contours[i]) for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
+    return area
