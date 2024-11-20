@@ -249,7 +249,7 @@ def pcaFusion(firstImage, secondImage):
     mean, eigenvectors = cv2.PCACompute(reshaped_images, mean=None, maxComponents=1)
     fusedImage = cv2.PCAProject(reshaped_images, mean, eigenvectors)
     fusedImage = fusedImage.reshape(firstImage.shape)
-    return fusedImage
+    return fusedImage.astype(np.float32)
 
 def waveletFusion(firstImage, secondImage):
     coeffs1 = pywt.dwt2(firstImage, 'haar')
@@ -263,7 +263,7 @@ def waveletFusion(firstImage, secondImage):
 
     fusedImage = pywt.idwt2((cA_fused, (cH_fused, cV_fused, cD_fused)), 'haar')
 
-    return fusedImage
+    return fusedImage.astype(np.float32)
 
 
 
@@ -298,4 +298,4 @@ def fftFusion(firstImage, secondImage):
     fusedImage = np.fft.ifft2(np.fft.ifftshift(fused_fft_shifted))
 
     fusedImage = np.real(fusedImage)
-    return fusedImage
+    return fusedImage.astype(np.float32)
