@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import math
+import pywt
 
 def contourSolidity(contour):
 	contour_area = cv2.contourArea(contour)  
@@ -442,3 +444,88 @@ def imageMoments(image, binaryImage):
         moments.append(huMoments[i]) 
 
     return moments
+
+
+def imageEdgeDensity(image, firstThresh, secondThresh):
+    edges = cv2.Canny(image, firstThresh, secondThresh)
+    edgeDensity = np.count_nonzero(edges) / edges.size
+    return edgeDensity
+
+
+
+def contrastAdjustment(image, in_ranges, out_ranges, gammas, alphas, betas):
+    adjustedImage = np.zeros_like(image, dtype=np.float32)
+    for i, (in_range, out_range) in enumerate(zip(in_ranges, out_ranges)):
+        in_min, in_max = in_range
+        out_min, out_max = out_range
+        gamma = gammas[i]
+        alpha = alphas[i]
+        beta = betas[i]
+        mask = (image >= in_min) & (image <= in_max)
+        normalized = (image.astype(np.float32) - in_min) / (in_max - in_min)
+        normalized = np.clip(normalized, 0, 1)  
+        gamma_corrected = np.power(normalized, gamma) * mask
+        scaled = gamma_corrected * (out_max - out_min) + out_min
+        transformed = alpha * scaled + beta
+        adjustedImage[mask] = transformed[mask]
+
+    return adjustedImage
+
+
+def pcaFusion(firstImage, secondImage):
+    stacked_images = np.dstack((firstImage, secondImage))
+    reshaped_images = stacked_images.reshape(-1, 2)
+    reshaped_images = np.float32(reshaped_images)
+    mean, eigenvectors = cv2.PCACompute(reshaped_images, mean=None, maxComponents=1)
+    fusedImage = cv2.PCAProject(reshaped_images, mean, eigenvectors)
+    fusedImage = fusedImage.reshape(firstImage.shape)
+    return fusedImage
+
+def waveletFusion(firstImage, secondImage):
+    coeffs1 = pywt.dwt2(firstImage, 'haar')
+    coeffs2 = pywt.dwt2(secondImage, 'haar')
+    cA1, (cH1, cV1, cD1) = coeffs1
+    cA2, (cH2, cV2, cD2) = coeffs2
+    cA_fused = (cA1 + cA2) / 2
+    cH_fused = (cH1 + cH2) / 2
+    cV_fused = (cV1 + cV2) / 2
+    cD_fused = (cD1 + cD2) / 2
+
+    fusedImage = pywt.idwt2((cA_fused, (cH_fused, cV_fused, cD_fused)), 'haar')
+
+    return fusedImage
+
+
+
+def fftFusion(firstImage, secondImage):
+    def fft_decompose(image):
+        fft_image = np.fft.fft2(image)
+        fft_image_shifted = np.fft.fftshift(fft_image)
+
+        rows, cols = image.shape
+        center_row, center_col = rows // 2, cols // 2
+
+        low_pass = np.zeros((rows, cols))
+        low_pass[center_row-rows//4:center_row+rows//4, center_col-cols//4:center_col+cols//4] = 1
+        low_pass_fft = fft_image_shifted * low_pass
+
+        high_pass = 1 - low_pass
+        high_pass_fft = fft_image_shifted * high_pass
+
+        low_pass_image = np.fft.ifft2(np.fft.ifftshift(low_pass_fft))
+        high_pass_image = np.fft.ifft2(np.fft.ifftshift(high_pass_fft))
+        return low_pass_image, high_pass_image
+
+    
+    low1, high1 = fft_decompose(firstImage)
+    low2, high2 = fft_decompose(secondImage)
+
+    fused_low = (np.abs(low1) + np.abs(low2)) / 2
+    fused_high = (np.abs(high1) + np.abs(high2)) / 2
+
+    fused_fft = np.fft.fft2(fused_low) + np.fft.fft2(fused_high)
+    fused_fft_shifted = np.fft.fftshift(fused_fft)
+    fusedImage = np.fft.ifft2(np.fft.ifftshift(fused_fft_shifted))
+
+    fusedImage = np.real(fusedImage)
+    return fusedImage
