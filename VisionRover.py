@@ -225,3 +225,120 @@ def randomForest(features, labels, maxDepth, testRatio):
         testConfusionMx[trueLabel, int(predLabel)] += 1
     
     return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
+
+
+def minMaxLoc(input):
+    if len(input.shape) == 3:  # RGB or RGBA image
+        minVal_per_channel = []
+        maxVal_per_channel = []
+        minLoc_per_channel = []
+        maxLoc_per_channel = []
+
+        for i in range(input.shape[2]):
+
+            minVal = np.min(input[:,:,i])
+            maxVal = np.max(input[:,:,i])
+            minLoc = np.where(input[:,:,i] == minVal)
+            maxLoc = np.where(input[:,:,i] == maxVal)
+
+            minVal_per_channel.append(minVal)
+            maxVal_per_channel.append(maxVal)
+            minLoc_per_channel.append((minLoc[0][0], minLoc[1][0]))
+            maxLoc_per_channel.append((maxLoc[0][0], maxLoc[1][0]))
+
+        return minVal_per_channel, maxVal_per_channel, minLoc_per_channel, maxLoc_per_channel
+    
+    else:  # Grayscale image
+
+        minVal = np.min(input)
+        maxVal = np.max(input)
+        minLoc = np.where(input == minVal)
+        maxLoc = np.where(input == maxVal)
+
+        return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
+
+
+def panoramaStichting(leftView, rightView):
+
+    if len(leftView.shape) == 3:
+        if leftView.shape[2] == 3:
+            gray1 = cv2.cvtColor(leftView,cv2.COLOR_BGR2GRAY)
+        elif leftView.shape[2] == 4:
+            gray1 = cv2.cvtColor(leftView,cv2.COLOR_BGRA2GRAY)
+
+    if len(rightView.shape) == 3:
+        if rightView.shape[2] == 3:
+            gray2 = cv2.cvtColor(rightView, cv2.COLOR_BGR2GRAY)
+        elif rightView.shape[2] == 4:
+            gray2 = cv2.cvtColor(rightView,cv2.COLOR_BGRA2GRAY)
+    
+
+    sift = cv2.SIFT_create()
+    kp1, desc1 = sift.detectAndCompute(gray1, None)
+    kp2, desc2 = sift.detectAndCompute(gray2, None)
+
+
+    matches = cv2.BFMatcher(cv2.NORM_L2, True).match(desc1, desc2)
+    
+    src_pts = np.float32([kp1[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+    dst_pts = np.float32([kp2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+
+    H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+
+    H_inv = np.linalg.inv(H)
+
+    stitchedImage = cv2.warpPerspective(rightView, H_inv, (leftView.shape[1] + rightView.shape[1], leftView.shape[0]))
+
+    stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
+
+    return stitchedImage
+
+
+def imageNumOfHoles(image):
+    all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+
+    holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
+    return holes
+
+def svm(features, labels, kernelType, C, gamma, testRatio):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
+    indices = np.arange(features.shape[0])
+    np.random.shuffle(indices)
+    features, labels = features[indices], labels[indices]
+
+    splitIndex = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIndex], features[splitIndex:]
+    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
+
+    svmModel = cv2.ml.SVM_create()
+    svmModel.setKernel(kernelType)  
+    svmModel.setC(C)  
+    svmModel.setGamma(gamma)  
+    svmModel.setType(cv2.ml.SVM_C_SVC)  
+    svmModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 1000, 1e-6))
+    svmModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
+
+    _, trainPreds = svmModel.predict(XTrain)
+    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
+
+    numClasses = len(np.unique(labels))
+    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
+        trainConfusionMx[trueLabel, int(predLabel)] += 1
+
+    _, testPreds = svmModel.predict(XTest)
+    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
+
+    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
+        testConfusionMx[trueLabel, int(predLabel)] += 1
+
+    return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
+
+def imageEdgeAngle(image):
+    sobelX = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
+    sobelY = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
+    edge_angles = np.arctan2(sobelY, sobelX) * 180 / np.pi
+    meanEdgeAngle = np.mean(edge_angles)
+    return meanEdgeAngle
