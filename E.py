@@ -304,11 +304,11 @@ def fftFusion(firstImage, secondImage):
 def floodFill(image, seed_point, new_color, lo_diff=10, up_diff=10, floodFillFlags):
     if isinstance(new_color, int):
         new_color = (new_color, new_color, new_color)
-    filled_image = image.copy()
+    filledImage = image.copy()
     height, width = image.shape[:2]
     mask = np.zeros((height + 2, width + 2), np.uint8)  # Mask must be 2 pixels larger than the image
-    retval, filled_image, mask, rect = cv2.floodFill(
-        filled_image, mask, seedPoint=seed_point, newVal=new_color, loDiff=(lo_diff, lo_diff, lo_diff),
+    retval, filledImage, mask, rect = cv2.floodFill(
+        filledImage, mask, seedPoint=seed_point, newVal=new_color, loDiff=(lo_diff, lo_diff, lo_diff),
         upDiff=(up_diff, up_diff, up_diff), flags=floodFillFlags
     )
 
