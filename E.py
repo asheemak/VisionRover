@@ -92,7 +92,7 @@ def contourInnerRectArea(contour):
 
 
 
-def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
+def lineProfile(image, startPoint, endPoint, lineColor):
     def get_line_coordinates(startPoint, endPoint):
         x1, y1 = startPoint
         x2, y2 = endPoint
@@ -132,7 +132,7 @@ def lineProfile(image, startPoint, endPoint, lineColor=(0, 0, 255)):
     deriv2 = np.gradient(np.gradient(profile))
     deriv1 = np.gradient(profile)
 
-    return img, profile, deriv1, deriv2, lineLength, lineAngle
+    return img, profile, deriv1.tolist(), deriv2.tolist(), lineLength, lineAngle
 
 
 def randomForest(features, labels, maxDepth, testRatio):
