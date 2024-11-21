@@ -84,8 +84,8 @@ def contourRectangularity(contour):
     bounding_box = cv2.boundingRect(contour)  
     bounding_box_area = bounding_box[2] * bounding_box[3]  
     contour_area = cv2.contourArea(contour)  
-    rectangularity = contour_area / bounding_box_area if bounding_box_area != 0 else 0
-    return rectangularity
+    rectang = contour_area / bounding_box_area if bounding_box_area != 0 else 0
+    return rectang
 
 def contourNumOfSides(contour):
     epsilon = 0.02 * cv2.arcLength(contour, True)  
