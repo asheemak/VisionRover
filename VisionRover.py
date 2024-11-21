@@ -527,15 +527,15 @@ def fftFusion(firstImage, secondImage):
     fusedImage = np.real(fusedImage)
     return fusedImage.astype(np.float32)
 
-def floodFill(image, seed_point, new_color, lo_diff, up_diff, floodFillFlags):
-    if isinstance(new_color, int):
-        new_color = (new_color, new_color, new_color)
+def floodFill(image, seedPoint, newColor, loDiff, upDiff, floodFillFlags):
+    if isinstance(newColor, int):
+        newColor = (newColor, newColor, newColor)
     filledImage = image.copy()
     height, width = image.shape[:2]
     mask = np.zeros((height + 2, width + 2), np.uint8)  # Mask must be 2 pixels larger than the image
     retval, filledImage, mask, rect = cv2.floodFill(
-        filledImage, mask, seedPoint=seed_point, newVal=new_color, loDiff=(lo_diff, lo_diff, lo_diff),
-        upDiff=(up_diff, up_diff, up_diff), flags=floodFillFlags
+        filledImage, mask, seedPoint=seedPoint, newVal=newColor, loDiff=(loDiff, loDiff, loDiff),
+        upDiff=(upDiff, upDiff, upDiff), flags=floodFillFlags
     )
 
     return retval, filledImage, mask, rect
