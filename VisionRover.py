@@ -259,9 +259,8 @@ def minMaxLoc(input):
 
         return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
 
-
+"""
 def panoramaStitching(leftView, rightView):
-
     def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
 
         rows1, cols1, _ = left_image.shape
@@ -326,7 +325,7 @@ def panoramaStitching(leftView, rightView):
     stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
 
     return Overlay_inlier_image, Overlay_outlier_image, stitchedImage
-
+"""
 
 
 def imageNumOfHoles(image):
