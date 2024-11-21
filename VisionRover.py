@@ -531,7 +531,7 @@ def fftFusion(firstImage, secondImage):
     fusedImage = np.real(fusedImage)
     return fusedImage.astype(np.float32)
 
-def floodFill(image, seed_point, new_color, lo_diff=10, up_diff=10, floodFillFlags):
+def floodFill(image, seed_point, new_color, lo_diff, up_diff, floodFillFlags):
     if isinstance(new_color, int):
         new_color = (new_color, new_color, new_color)
     filledImage = image.copy()
