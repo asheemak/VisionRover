@@ -64,40 +64,41 @@ def contourOuterRadius(contour):
     _, radius = cv2.minEnclosingCircle(contour)
     return radius
 
+######################################################
+#   it will add as 78 to 81 in future
+######################################################
+# def minMaxLoc(input):
+#     if len(input.shape) == 3:  # RGB or RGBA image
+#         minVal_per_channel = []
+#         maxVal_per_channel = []
+#         minLoc_per_channel = []
+#         maxLoc_per_channel = []
 
+#         for i in range(input.shape[2]):
 
-def minMaxLoc(input):
-    if len(input.shape) == 3:  # RGB or RGBA image
-        minVal_per_channel = []
-        maxVal_per_channel = []
-        minLoc_per_channel = []
-        maxLoc_per_channel = []
+#             minVal = np.min(input[:,:,i])
+#             maxVal = np.max(input[:,:,i])
+#             minLoc = np.where(input[:,:,i] == minVal)
+#             maxLoc = np.where(input[:,:,i] == maxVal)
 
-        for i in range(input.shape[2]):
+#             minVal_per_channel.append(minVal)
+#             maxVal_per_channel.append(maxVal)
+#             minLoc_per_channel.append((minLoc[0][0], minLoc[1][0]))
+#             maxLoc_per_channel.append((maxLoc[0][0], maxLoc[1][0]))
 
-            minVal = np.min(input[:,:,i])
-            maxVal = np.max(input[:,:,i])
-            minLoc = np.where(input[:,:,i] == minVal)
-            maxLoc = np.where(input[:,:,i] == maxVal)
-
-            minVal_per_channel.append(minVal)
-            maxVal_per_channel.append(maxVal)
-            minLoc_per_channel.append((minLoc[0][0], minLoc[1][0]))
-            maxLoc_per_channel.append((maxLoc[0][0], maxLoc[1][0]))
-
-        return minVal_per_channel, maxVal_per_channel, minLoc_per_channel, maxLoc_per_channel
+#         return minVal_per_channel, maxVal_per_channel, minLoc_per_channel, maxLoc_per_channel
     
-    else:  # Grayscale image
+#     else:  # Grayscale image
 
-        minVal = np.min(input)
-        maxVal = np.max(input)
-        minLoc = np.where(input == minVal)
-        maxLoc = np.where(input == maxVal)
+#         minVal = np.min(input)
+#         maxVal = np.max(input)
+#         minLoc = np.where(input == minVal)
+#         maxLoc = np.where(input == maxVal)
 
-        return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
+#         return minVal, maxVal, (minLoc[0][0], minLoc[1][0]), (maxLoc[0][0], maxLoc[1][0])
+#########################################################
 
-
-def panoramaStichting(leftView, rightView):
+def panoramaStitching(leftView, rightView):
 
     def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
 
