@@ -188,7 +188,7 @@ def lineProfile(image, startPoint, endPoint, lineColor):
     deriv2 = np.gradient(np.gradient(profile))
     deriv1 = np.gradient(profile)
 
-    return img, profile, deriv1, deriv2, lineLength, lineAngle
+    return img, profile, deriv1.tolist(), deriv2.tolist(), lineLength, lineAngle
 
 
 def randomForest(features, labels, maxDepth, testRatio):
