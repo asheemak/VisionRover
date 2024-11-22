@@ -223,7 +223,7 @@ def imageEdgeDensity(image, firstThresh, secondThresh):
 
 
 
-def contrastAdjustment(image, in_ranges, out_ranges, gammas, alphas, betas):
+def adjustContrastExperimental(image, in_ranges, out_ranges, gammas, alphas, betas):
     adjustedImage = np.zeros_like(image, dtype=np.float32)
     for i, (in_range, out_range) in enumerate(zip(in_ranges, out_ranges)):
         in_min, in_max = in_range
