@@ -1,3 +1,8 @@
+import cv2
+import numpy as np
+import pywt
+
+
 def contourBulkiness(contour):
     contour_area = cv2.contourArea(contour)  
     convex_hull = cv2.convexHull(contour)    
@@ -301,14 +306,14 @@ def fftFusion(firstImage, secondImage):
     return fusedImage.astype(np.float32)
 
 
-def floodFill(image, seedPoint, newColor, loDiff, upDiff, floodFillFlags):
-    if isinstance(newColor, int):
-        newColor = (newColor, newColor, newColor)
+def floodFill(image, seedPoint, newVal, loDiff, upDiff, floodFillFlags):
+    if isinstance(newVal, int):
+        newVal = (newVal, newVal, newVal)
     filledImage = image.copy()
     height, width = image.shape[:2]
     mask = np.zeros((height + 2, width + 2), np.uint8)  # Mask must be 2 pixels larger than the image
     retval, filledImage, mask, rect = cv2.floodFill(
-        filledImage, mask, seedPoint=seedPoint, newVal=newColor, loDiff=(loDiff, loDiff, loDiff),
+        filledImage, mask, seedPoint=seedPoint, newVal=newVal, loDiff=(loDiff, loDiff, loDiff),
         upDiff=(upDiff, upDiff, upDiff), flags=floodFillFlags
     )
 
