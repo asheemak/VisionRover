@@ -255,3 +255,50 @@ def imageMoments(image, binaryImage):
         moments.append(huMoments[i]) 
 
     return moments
+
+
+
+
+def splitData(features, labels, testRatio, shuffle=True):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+    
+    indices = np.arange(features.shape[0])
+    if shuffle:
+        np.random.shuffle(indices)
+
+    features, labels = features[indices], labels[indices]
+    
+    splitIdx = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIdx], features[splitIdx:]
+    yTrain, yTest = labels[:splitIdx], labels[splitIdx:]
+    
+    return XTrain, XTest, yTrain, yTest
+
+
+
+def predict(model, features):
+    
+    if len(features.shape) == 1:
+        features = features.reshape(1, -1)
+
+    _, preds = model.predict(features)
+
+    preds = preds.flatten()
+    return preds
+
+
+def evaluateModel(model, features, labels):
+    
+    _, preds = model.predict(features)
+
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+  
+    numClasses = len(np.unique(labels))
+    confusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
+    for trueLabel, predLabel in zip(labels.flatten(), preds.flatten()):
+        confusionMx[trueLabel, int(predLabel)] += 1
+    
+    return accuracy, confusionMx
