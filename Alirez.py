@@ -296,12 +296,12 @@ def evaluateModel(model, features, labels):
     preds = preds.flatten()
     accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
   
-    numClasses = len(np.unique(labels))
-    confusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(labels.flatten(), preds.flatten()):
-        confusionMx[trueLabel, int(predLabel)] += 1
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[true_label, int(pred_label)] += 1
     
-    return accuracy, confusionMx
+    return accuracy, confusion_mx
 
 
 
