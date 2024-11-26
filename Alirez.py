@@ -321,3 +321,18 @@ def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=Non
         svm.setClassWeights(classWeights)
 
     return svm
+
+def randomForest(maxDepth=10, minSampleCount=2, regressionAccuracy=0.0, maxCategories=10):
+
+    # Create an RTrees instance
+    rtrees = cv2.ml.RTrees_create()
+
+    # Set the parameters
+    rtrees.setMaxDepth(maxDepth)
+    rtrees.setMinSampleCount(minSampleCount)
+    rtrees.setRegressionAccuracy(regressionAccuracy)
+    rtrees.setMaxCategories(maxCategories)
+    rtrees.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+
+    return rtrees
+
