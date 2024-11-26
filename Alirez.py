@@ -302,3 +302,22 @@ def evaluateModel(model, features, labels):
         confusionMx[trueLabel, int(predLabel)] += 1
     
     return accuracy, confusionMx
+
+
+
+def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None, type=cv2.ml.SVM_C_SVC):
+  
+    svm = cv2.ml.SVM_create()
+
+    # Set the parameters
+    svm.setC(C)
+    svm.setKernel(kernelType)
+    svm.setDegree(degree)
+    svm.setGamma(gamma)
+    svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
+    svm.setType(type)
+    
+    if classWeights is not None:
+        svm.setClassWeights(classWeights)
+
+    return svm
