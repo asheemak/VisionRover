@@ -276,6 +276,13 @@ def splitData(features, labels, testRatio, shuffle=True):
     return XTrain, XTest, yTrain, yTest
 
 
+def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
+    
+    model.train(XTrain, sampleType, yTrain)
+    
+    return model
+
+
 
 def predict(model, features):
     
