@@ -3,6 +3,21 @@ import numpy as np
 import math
 import pywt
 
+def loadImage(imagePath):
+   image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
+  
+   if image is None:
+       raise ValueError("Failed to load and decode Image")
+  
+   if len(image.shape) == 2 or image.shape[2] == 1: 
+       return image 
+   elif image.shape[2] == 3: 
+       return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
+   elif image.shape[2] == 4: 
+       return cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+   else:
+       raise ValueError("Image format not supported.")
+	   
 def contourSolidity(contour):
 	contour_area = cv2.contourArea(contour)  
 	convex_hull = cv2.convexHull(contour)  
