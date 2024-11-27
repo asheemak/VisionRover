@@ -41,7 +41,25 @@ def loadDicom(file_path):
         return image_array[0], metadata
     except Exception as e:
         raise ValueError(f"Could not read DICOM file: {file_path}")
-	   
+
+
+def loadOnxxSession(model_file_path):
+    options = onnxruntime.SessionOptions()
+    
+    # Enable all graph optimizations
+    options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+    # Set the number of threads used within a parallel operator
+    # sess_options.intra_op_num_threads = 2
+
+    # Set the execution mode to sequential
+    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
+
+    session = onnxruntime.InferenceSession(model_file_path, sess_options=options)
+
+    return session
+
+
 def contourSolidity(contour):
 	contour_area = cv2.contourArea(contour)  
 	convex_hull = cv2.convexHull(contour)  
