@@ -2,6 +2,63 @@ import cv2
 import numpy as np
 import math
 import pywt
+import SimpleITK as sitk
+import onnxruntime
+
+def loadImage(imagePath):
+   image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
+	
+   if image is None:
+       raise ValueError("Failed to load and decode Image")
+	   
+   return image
+
+
+def loadDicom(file_path):
+	
+    def remove_sensitive_data(metadata):
+        """Remove personal data from DICOM metadata dictionary."""
+        sensitive_keys = [
+            "0010|0010",  # Patient's Name
+            "0010|0020",  # Patient ID
+            "0010|0030",  # Patient's Birth Date
+            "0010|0040",  # Patient's Sex
+            "0010|1000",  # Other Patient IDs
+            "0010|2160",  # Ethnic Group
+            "0010|4000"   # Patient Comments
+        ]
+        for key in sensitive_keys:
+            if key in metadata:
+                metadata[key] = "Anonymous"  # Replace sensitive data with generic values
+
+    try:
+        reader = sitk.ImageFileReader()
+        reader.SetFileName(file_path)
+        image = reader.Execute()
+        metadata = {key: image.GetMetaData(key) for key in image.GetMetaDataKeys()}
+        remove_sensitive_data(metadata)
+        image_array = sitk.GetArrayFromImage(image)
+        return image_array[0], metadata
+    except Exception as e:
+        raise ValueError(f"Could not read DICOM file: {file_path}")
+
+
+def loadOnnxSession(model_file_path):
+    options = onnxruntime.SessionOptions()
+    
+    # Enable all graph optimizations
+    options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+    # Set the number of threads used within a parallel operator
+    # sess_options.intra_op_num_threads = 2
+
+    # Set the execution mode to sequential
+    options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
+
+    session = onnxruntime.InferenceSession(model_file_path, sess_options=options)
+
+    return session
+
 
 def contourSolidity(contour):
 	contour_area = cv2.contourArea(contour)  
