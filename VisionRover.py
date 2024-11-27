@@ -43,7 +43,7 @@ def loadDicom(file_path):
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
 
-def loadOnxxSession(model_file_path):
+def loadOnnxSession(model_file_path):
     options = onnxruntime.SessionOptions()
     
     # Enable all graph optimizations
