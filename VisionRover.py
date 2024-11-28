@@ -296,44 +296,6 @@ def lineProfile(image, startPoint, endPoint, lineColor):
 
     return img, profile, deriv1.tolist(), deriv2.tolist(), lineLength, lineAngle
 
-
-def randomForest(features, labels, maxDepth, testRatio):
-    features = np.array(features, dtype=np.float32)
-    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
-    indices = np.arange(features.shape[0])
-    np.random.shuffle(indices)
-    features, labels = features[indices], labels[indices]
-    
-    splitIndex = int(features.shape[0] * (1 - testRatio))
-    XTrain, XTest = features[:splitIndex], features[splitIndex:]
-    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
-    
-    rfModel = cv2.ml.RTrees_create()
-    rfModel.setMaxDepth(maxDepth)
-    rfModel.setMinSampleCount(2)
-    rfModel.setRegressionAccuracy(0)
-    rfModel.setUseSurrogates(False)
-    rfModel.setMaxCategories(len(np.unique(labels)))
-    rfModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-6))
-    rfModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
-    
-    _, trainPreds = rfModel.predict(XTrain)
-    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
-    
-    numClasses = len(np.unique(labels))
-    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
-        trainConfusionMx[trueLabel, int(predLabel)] += 1
-    
-    _, testPreds = rfModel.predict(XTest)
-    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
-    
-    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
-        testConfusionMx[trueLabel, int(predLabel)] += 1
-    
-    return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
-
 def panoramaStitching(leftView, rightView):
     def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
 
@@ -404,42 +366,6 @@ def imageNumOfHoles(image):
     all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
     return holes
-
-def svm(features, labels, kernelType, C, gamma, testRatio):
-    features = np.array(features, dtype=np.float32)
-    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
-    indices = np.arange(features.shape[0])
-    np.random.shuffle(indices)
-    features, labels = features[indices], labels[indices]
-
-    splitIndex = int(features.shape[0] * (1 - testRatio))
-    XTrain, XTest = features[:splitIndex], features[splitIndex:]
-    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
-
-    svmModel = cv2.ml.SVM_create()
-    svmModel.setKernel(kernelType)  
-    svmModel.setC(C)  
-    svmModel.setGamma(gamma)  
-    svmModel.setType(cv2.ml.SVM_C_SVC)  
-    svmModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 1000, 1e-6))
-    svmModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
-
-    _, trainPreds = svmModel.predict(XTrain)
-    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
-
-    numClasses = len(np.unique(labels))
-    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
-        trainConfusionMx[trueLabel, int(predLabel)] += 1
-
-    _, testPreds = svmModel.predict(XTest)
-    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
-
-    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
-        testConfusionMx[trueLabel, int(predLabel)] += 1
-
-    return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
 
 def imageEdgeAngle(image):
     sobelX = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
@@ -614,3 +540,77 @@ def floodFill(image, seedPoint, newVal, loDiff, upDiff, floodFillFlags):
     )
 
     return retval, filledImage, mask, rect
+
+
+def splitData(features, labels, testRatio, shuffle=True):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+    
+    indices = np.arange(features.shape[0])
+    if shuffle:
+        np.random.shuffle(indices)
+
+    features, labels = features[indices], labels[indices]
+    splitIdx = int(features.shape[0] * (1 - testRatio))
+    XTrain, XTest = features[:splitIdx], features[splitIdx:]
+    yTrain, yTest = labels[:splitIdx], labels[splitIdx:]
+    
+    return XTrain, XTest, yTrain, yTest
+
+
+def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
+    model.train(XTrain, sampleType, yTrain)
+    return model
+
+
+
+def predict(model, features):
+    if len(features.shape) == 1:
+        features = features.reshape(1, -1)
+	    
+    _, preds = model.predict(features)
+    preds = preds.flatten()
+    return preds
+
+
+def evaluateModel(model, features, labels):
+    _, preds = model.predict(features)
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+	
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[true_label, int(pred_label)] += 1
+    
+    return accuracy, confusion_mx
+
+
+
+def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None, type=cv2.ml.SVM_C_SVC):
+    svm = cv2.ml.SVM_create()
+    # Set the parameters
+    svm.setC(C)
+    svm.setKernel(kernelType)
+    svm.setDegree(degree)
+    svm.setGamma(gamma)
+    svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
+    svm.setType(type)
+    
+    if classWeights is not None:
+        svm.setClassWeights(classWeights)
+
+    return svm
+
+def randomForest(maxDepth=10, minSampleCount=2, regressionAccuracy=0.0, maxCategories=10):
+    # Create an RTrees instance
+    rtrees = cv2.ml.RTrees_create()
+    # Set the parameters
+    rtrees.setMaxDepth(maxDepth)
+    rtrees.setMinSampleCount(minSampleCount)
+    rtrees.setRegressionAccuracy(regressionAccuracy)
+    rtrees.setMaxCategories(maxCategories)
+    rtrees.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+
+    return rtrees
