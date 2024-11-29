@@ -269,11 +269,11 @@ def splitData(features, labels, testRatio, shuffle=True):
 
     features, labels = features[indices], labels[indices]
     
-    splitIdx = int(features.shape[0] * (1 - testRatio))
-    XTrain, XTest = features[:splitIdx], features[splitIdx:]
-    yTrain, yTest = labels[:splitIdx], labels[splitIdx:]
+    split_idx = int(features.shape[0] * (1 - testRatio))
+    x_train, x_test = features[:split_idx], features[split_idx:]
+    y_train, y_test = labels[:split_idx], labels[split_idx:]
     
-    return XTrain, XTest, yTrain, yTest
+    return x_train, x_test, y_train, y_test
 
 
 def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
@@ -312,34 +312,34 @@ def evaluateModel(model, features, labels):
 
 
 
-def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None, type=cv2.ml.SVM_C_SVC):
+def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None):
   
-    svm = cv2.ml.SVM_create()
+    svm_model = cv2.ml.SVM_create()
 
     # Set the parameters
-    svm.setC(C)
-    svm.setKernel(kernelType)
-    svm.setDegree(degree)
-    svm.setGamma(gamma)
-    svm.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
-    svm.setType(type)
+    svm_model.setC(C)
+    svm_model.setKernel(kernelType)
+    svm_model.setDegree(degree)
+    svm_model.setGamma(gamma)
+    svm_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
+    svm_model.setType(cv2.ml.SVM_C_SVC)
     
     if classWeights is not None:
-        svm.setClassWeights(classWeights)
+        svm_model.setClassWeights(classWeights)
 
-    return svm
+    return svm_model
 
-def randomForest(maxDepth=10, minSampleCount=2, regressionAccuracy=0.0, maxCategories=10):
+
+def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
 
     # Create an RTrees instance
-    rtrees = cv2.ml.RTrees_create()
+    rf_model = cv2.ml.RTrees_create()
 
     # Set the parameters
-    rtrees.setMaxDepth(maxDepth)
-    rtrees.setMinSampleCount(minSampleCount)
-    rtrees.setRegressionAccuracy(regressionAccuracy)
-    rtrees.setMaxCategories(maxCategories)
-    rtrees.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+    rf_model.setMaxDepth(maxDepth)
+    rf_model.setMinSampleCount(minSampleCount)
+    rf_model.setMaxCategories(maxCategories)
+    rf_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
 
-    return rtrees
+    return rf_model
 

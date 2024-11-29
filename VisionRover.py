@@ -59,6 +59,55 @@ def loadOnnxSession(model_file_path):
 
     return session
 
+def sam(encoder_session, decoder_session, image, input_point, input_label):
+    np_input_point = np.array([input_point])
+    np_input_label = np.array([input_label])
+    
+    def prepare_inputs_encoder(image, ort_session):
+        # Preprocess the image and convert it into a blob
+        image = cv2.resize(image, (1024, 1024))
+        blob = cv2.dnn.blobFromImage(image, 1/256)
+        # Prepare the inputs for the encoder model
+        inputs_encoder = {ort_session.get_inputs()[0].name: blob}
+        return inputs_encoder
+ 
+    def prepare_decoder_inputs(image_embedding, input_point, input_label):
+        # Prepare the coordinates for the input points, adding a dummy point
+        onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[None, :, :].astype(np.float32)
+        # Prepare the labels for the input points, adding a dummy label
+        onnx_label = np.concatenate([input_label, np.array([-1])], axis=0)[None, :].astype(np.float32)
+        # Prepare the inputs for the decoder model
+        ort_inputs_decoder = {
+            "image_embeddings": image_embedding.astype(np.float32),
+            "point_coords": onnx_coord,
+            "point_labels": onnx_label,
+        }
+        return ort_inputs_decoder
+
+    # Prepare the inputs for the encoder
+    inputs_encoder = prepare_inputs_encoder(image, encoder_session)
+    # Run inference on the encoder model
+    result_encoder = encoder_session.run(None, inputs_encoder)
+    # Extract the image embedding from the encoder's output
+    image_embedding = np.array(result_encoder[0])
+ 
+    # Decoder inference
+    # Prepare the inputs for the decoder using the image embedding and input points/labels
+    ort_inputs_decoder = prepare_decoder_inputs(image_embedding, np_input_point, np_input_label)
+    # Run inference on the decoder model
+    result_decoder = decoder_session.run(None, ort_inputs_decoder)
+    # Extract the low-resolution logits and masks from the decoder's output
+    low_res_logits, maskss = result_decoder
+ 
+    # Process the mask
+    # Apply a binary threshold to convert the mask probabilities to a binary mask
+    _, binaryMasks = cv2.threshold(maskss[0][2], 0, 255, cv2.THRESH_BINARY)
+    # Resize the mask to match the original image dimensions
+    binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
+ 
+    # Return the final mask
+    return binaryMasks
+
 
 def contourSolidity(contour):
 	contour_area = cv2.contourArea(contour)  
@@ -247,44 +296,6 @@ def lineProfile(image, startPoint, endPoint, lineColor):
 
     return img, profile, deriv1.tolist(), deriv2.tolist(), lineLength, lineAngle
 
-
-def randomForest(features, labels, maxDepth, testRatio):
-    features = np.array(features, dtype=np.float32)
-    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
-    indices = np.arange(features.shape[0])
-    np.random.shuffle(indices)
-    features, labels = features[indices], labels[indices]
-    
-    splitIndex = int(features.shape[0] * (1 - testRatio))
-    XTrain, XTest = features[:splitIndex], features[splitIndex:]
-    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
-    
-    rfModel = cv2.ml.RTrees_create()
-    rfModel.setMaxDepth(maxDepth)
-    rfModel.setMinSampleCount(2)
-    rfModel.setRegressionAccuracy(0)
-    rfModel.setUseSurrogates(False)
-    rfModel.setMaxCategories(len(np.unique(labels)))
-    rfModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 100, 1e-6))
-    rfModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
-    
-    _, trainPreds = rfModel.predict(XTrain)
-    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
-    
-    numClasses = len(np.unique(labels))
-    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
-        trainConfusionMx[trueLabel, int(predLabel)] += 1
-    
-    _, testPreds = rfModel.predict(XTest)
-    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
-    
-    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
-        testConfusionMx[trueLabel, int(predLabel)] += 1
-    
-    return rfModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
-
 def panoramaStitching(leftView, rightView):
     def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
 
@@ -355,42 +366,6 @@ def imageNumOfHoles(image):
     all_contours, hierarchy = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
     holes = sum(1 for i in range(len(all_contours)) if hierarchy[0][i][3] != -1)
     return holes
-
-def svm(features, labels, kernelType, C, gamma, testRatio):
-    features = np.array(features, dtype=np.float32)
-    labels = np.array(labels, dtype=np.int32).reshape(-1, 1)
-    indices = np.arange(features.shape[0])
-    np.random.shuffle(indices)
-    features, labels = features[indices], labels[indices]
-
-    splitIndex = int(features.shape[0] * (1 - testRatio))
-    XTrain, XTest = features[:splitIndex], features[splitIndex:]
-    yTrain, yTest = labels[:splitIndex], labels[splitIndex:]
-
-    svmModel = cv2.ml.SVM_create()
-    svmModel.setKernel(kernelType)  
-    svmModel.setC(C)  
-    svmModel.setGamma(gamma)  
-    svmModel.setType(cv2.ml.SVM_C_SVC)  
-    svmModel.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 1000, 1e-6))
-    svmModel.train(XTrain, cv2.ml.ROW_SAMPLE, yTrain)
-
-    _, trainPreds = svmModel.predict(XTrain)
-    trainAccuracy = np.mean((trainPreds == yTrain).astype(np.float32)) * 100
-
-    numClasses = len(np.unique(labels))
-    trainConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTrain.flatten(), trainPreds.flatten()):
-        trainConfusionMx[trueLabel, int(predLabel)] += 1
-
-    _, testPreds = svmModel.predict(XTest)
-    testAccuracy = np.mean((testPreds == yTest).astype(np.float32)) * 100
-
-    testConfusionMx = np.zeros((numClasses, numClasses), dtype=np.int32)
-    for trueLabel, predLabel in zip(yTest.flatten(), testPreds.flatten()):
-        testConfusionMx[trueLabel, int(predLabel)] += 1
-
-    return svmModel, trainAccuracy, trainConfusionMx, testAccuracy, testConfusionMx
 
 def imageEdgeAngle(image):
     sobelX = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
@@ -553,15 +528,94 @@ def fftFusion(firstImage, secondImage):
     fusedImage = np.real(fusedImage)
     return fusedImage.astype(np.float32)
 
-def floodFill(image, seedPoint, newColor, loDiff, upDiff, floodFillFlags):
-    if isinstance(newColor, int):
-        newColor = (newColor, newColor, newColor)
+def floodFill(image, seedPoint, newVal, loDiff, upDiff, floodFillFlags):
+    if isinstance(newVal, int):
+        newVal = (newVal, newVal, newVal)
     filledImage = image.copy()
     height, width = image.shape[:2]
     mask = np.zeros((height + 2, width + 2), np.uint8)  # Mask must be 2 pixels larger than the image
     retval, filledImage, mask, rect = cv2.floodFill(
-        filledImage, mask, seedPoint=seedPoint, newVal=newColor, loDiff=(loDiff, loDiff, loDiff),
+        filledImage, mask, seedPoint=seedPoint, newVal=newVal, loDiff=(loDiff, loDiff, loDiff),
         upDiff=(upDiff, upDiff, upDiff), flags=floodFillFlags
     )
 
     return retval, filledImage, mask, rect
+
+
+def splitData(features, labels, testRatio, shuffle=True):
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+    
+    indices = np.arange(features.shape[0])
+    if shuffle:
+        np.random.shuffle(indices)
+
+    features, labels = features[indices], labels[indices]
+    
+    split_idx = int(features.shape[0] * (1 - testRatio))
+    x_train, x_test = features[:split_idx], features[split_idx:]
+    y_train, y_test = labels[:split_idx], labels[split_idx:]
+    
+    return x_train, x_test, y_train, y_test
+
+
+def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
+    model.train(XTrain, sampleType, yTrain)
+    return model
+
+
+
+def predict(model, features):
+    if len(features.shape) == 1:
+        features = features.reshape(1, -1)
+	    
+    _, preds = model.predict(features)
+    preds = preds.flatten()
+    return preds
+
+
+def evaluateModel(model, features, labels):
+    _, preds = model.predict(features)
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+	
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[true_label, int(pred_label)] += 1
+    
+    return accuracy, confusion_mx
+
+
+
+def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None):
+  
+    svm_model = cv2.ml.SVM_create()
+
+    # Set the parameters
+    svm_model.setC(C)
+    svm_model.setKernel(kernelType)
+    svm_model.setDegree(degree)
+    svm_model.setGamma(gamma)
+    svm_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
+    svm_model.setType(cv2.ml.SVM_C_SVC)
+    
+    if classWeights is not None:
+        svm_model.setClassWeights(classWeights)
+
+    return svm_model
+
+
+def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
+
+    # Create an RTrees instance
+    rf_model = cv2.ml.RTrees_create()
+
+    # Set the parameters
+    rf_model.setMaxDepth(maxDepth)
+    rf_model.setMinSampleCount(minSampleCount)
+    rf_model.setMaxCategories(maxCategories)
+    rf_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+
+    return rf_model
