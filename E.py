@@ -97,7 +97,11 @@ def contourInnerRectArea(contour):
 
 
 
-def lineProfile(image, startPoint, endPoint, lineColor):
+def lineProfile(image, points, lineColor):
+    # Extract startPoint and endPoint from points
+    startPoint = points[0]
+    endPoint = points[1]
+
     def get_line_coordinates(startPoint, endPoint):
         x1, y1 = startPoint
         x2, y2 = endPoint
@@ -108,7 +112,7 @@ def lineProfile(image, startPoint, endPoint, lineColor):
         sy = 1 if y1 < y2 else -1
         err = dx - dy
 
-        for _ in range(max(dx, dy) + 1):  
+        for _ in range(max(dx, dy) + 1):
             coordinates.append((x1, y1))
             if x1 == x2 and y1 == y2:
                 break
@@ -123,21 +127,23 @@ def lineProfile(image, startPoint, endPoint, lineColor):
         return coordinates
 
     def get_line_profile(image, startPoint, endPoint):
-
         coordinates = get_line_coordinates(startPoint, endPoint)
-        profile = [image[y, x] for x, y in coordinates if 0 <= x < image.shape[1] and 0 <= y < image.shape[0]]
+        profile = [
+            image[y, x] for x, y in coordinates
+            if 0 <= x < image.shape[1] and 0 <= y < image.shape[0]
+        ]
         return profile, coordinates
 
     line_thickness = 1
     img = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
     cv2.line(img, startPoint, endPoint, lineColor, line_thickness)
     profile, line_coordinates = get_line_profile(image, startPoint, endPoint)
-    lineLength = np.hypot(endPoint[0] - startPoint[0], endPoint[1] - startPoint[1])
-    lineAngle = np.arctan2(endPoint[1] - startPoint[1], endPoint[0] - startPoint[0]) * 180 / np.pi
+    Length = np.hypot(endPoint[0] - startPoint[0], endPoint[1] - startPoint[1])
+
     deriv2 = np.gradient(np.gradient(profile))
     deriv1 = np.gradient(profile)
 
-    return img, profile, deriv1.tolist(), deriv2.tolist(), lineLength, lineAngle
+    return img, profile, deriv1.tolist(), deriv2.tolist(), Length
 
 
 def randomForest(features, labels, maxDepth, testRatio):
