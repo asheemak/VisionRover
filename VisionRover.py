@@ -626,3 +626,16 @@ def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
     rf_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
 
     return rf_model
+
+
+def fitLine(image, points, dist_type, param, reps, aeps, color_line, thickness):
+    points = np.array(points, dtype=np.float32)
+    line = cv2.fitLine(points, dist_type, param, reps, aeps)
+    vx, vy, x, y = line.flatten()
+    height, width = image.shape[:2]
+    t = max(width, height)  # Extend line beyond the image size
+    pt1 = (int(x - vx * t), int(y - vy * t))
+    pt2 = (int(x + vx * t), int(y + vy * t))
+    cv2.line(image, pt1, pt2, color_line, thickness)
+
+    return image, vx, vy, x, y
