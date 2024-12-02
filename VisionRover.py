@@ -60,9 +60,11 @@ def loadOnnxSession(model_file_path):
     return session
 
 def sam(encoder_session, decoder_session, image, input_point, input_label):
-    np_input_point = np.array([input_point])
-    np_input_label = np.array([input_label])
-    
+
+    np_input_point = input_point
+    np_input_label = input_label
+    orig_height, orig_width = image.shape[:2]
+
     def prepare_inputs_encoder(image, ort_session):
         # Preprocess the image and convert it into a blob
         image = cv2.resize(image, (1024, 1024))
@@ -70,7 +72,7 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
         # Prepare the inputs for the encoder model
         inputs_encoder = {ort_session.get_inputs()[0].name: blob}
         return inputs_encoder
- 
+
     def prepare_decoder_inputs(image_embedding, input_point, input_label):
         # Prepare the coordinates for the input points, adding a dummy point
         onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[None, :, :].astype(np.float32)
@@ -86,26 +88,24 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
 
     # Prepare the inputs for the encoder
     inputs_encoder = prepare_inputs_encoder(image, encoder_session)
-    # Run inference on the encoder model
     result_encoder = encoder_session.run(None, inputs_encoder)
-    # Extract the image embedding from the encoder's output
     image_embedding = np.array(result_encoder[0])
- 
+
+    # Adjust input_point according to image resizing
+    scale_x = 1024 / orig_width
+    scale_y = 1024 / orig_height
+    np_input_point_scaled = np_input_point * [scale_x, scale_y]
+
     # Decoder inference
-    # Prepare the inputs for the decoder using the image embedding and input points/labels
-    ort_inputs_decoder = prepare_decoder_inputs(image_embedding, np_input_point, np_input_label)
-    # Run inference on the decoder model
+    ort_inputs_decoder = prepare_decoder_inputs(image_embedding, np_input_point_scaled, np_input_label)
     result_decoder = decoder_session.run(None, ort_inputs_decoder)
-    # Extract the low-resolution logits and masks from the decoder's output
     low_res_logits, maskss = result_decoder
- 
-    # Process the mask
+
     # Apply a binary threshold to convert the mask probabilities to a binary mask
     _, binaryMasks = cv2.threshold(maskss[0][2], 0, 255, cv2.THRESH_BINARY)
     # Resize the mask to match the original image dimensions
     binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
- 
-    # Return the final mask
+
     return binaryMasks
 
 
