@@ -260,18 +260,49 @@ def imageMoments(image, binaryImage):
 
 
 def splitData(features, labels, testRatio, shuffle=True):
+
+    if isinstance(features, np.ndarray):
+        if len(features.shape) > 2:
+            raise ValueError("feature should be 2d")
+        
+    if isinstance(labels, np.ndarray):
+        if len(labels.shape) > 2:
+            raise ValueError("labels should be 2d")
+        
+        if len(labels.shape) == 2:
+            if labels.shape[0] != 1 and labels.shape[1] != 1:
+                raise ValueError("labels should 1xn or nx1")
+
+            if labels.shape[0] == 1:
+                labels = labels.flatten()
+     
     features = np.array(features, dtype=np.float32)
     labels = np.array(labels, dtype=np.int32)
     
-    indices = np.arange(features.shape[0])
-    if shuffle:
-        np.random.shuffle(indices)
+    if labels.flatten().shape[0] == features.shape[0]:
+        indices = np.arange(features.shape[0])
+        if shuffle:
+            np.random.shuffle(indices)
 
-    features, labels = features[indices], labels[indices]
-    
-    split_idx = int(features.shape[0] * (1 - testRatio))
-    x_train, x_test = features[:split_idx], features[split_idx:]
-    y_train, y_test = labels[:split_idx], labels[split_idx:]
+        features, labels = features[indices], labels[indices]
+        
+        split_idx = round(features.shape[0] * (1 - testRatio))
+        x_train, x_test = features[:split_idx], features[split_idx:]
+        y_train, y_test = labels[:split_idx], labels[split_idx:]
+
+    elif labels.flatten().shape[0] == features.shape[1]:
+        indices = np.arange(features.shape[1])
+        if shuffle:
+            np.random.shuffle(indices)
+
+        features, labels = features[:, indices], labels[indices]
+        
+        split_idx = round(features.shape[1] * (1 - testRatio))
+        x_train, x_test = features[:, :split_idx], features[:, split_idx:]
+        y_train, y_test = labels[:split_idx], labels[split_idx:]
+
+    else:
+        raise ValueError("Each feature must have a corresponding label")
     
     return x_train, x_test, y_train, y_test
 
@@ -285,12 +316,12 @@ def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
 
 
 def predict(model, features):
+    features = np.array(features, dtype=np.float32)
     
     if len(features.shape) == 1:
         features = features.reshape(1, -1)
 
     _, preds = model.predict(features)
-
     preds = preds.flatten()
     return preds
 
