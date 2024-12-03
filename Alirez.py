@@ -327,7 +327,7 @@ def predict(model, features):
 
 
 def evaluateModel(model, features, labels):
-    
+    features = np.array(features, dtype=np.float32)
     _, preds = model.predict(features)
 
     labels = labels.flatten()
