@@ -60,8 +60,8 @@ def loadOnnxSession(model_file_path):
     return session
 
 def sam(encoder_session, decoder_session, image, input_point, input_label):
-
-    np_input_point = input_point
+    # Convert input_point (tuple) to NumPy array
+    np_input_point = np.array(input_point, dtype=np.float32)[None, :]  # Shape (1, 2)
     np_input_label = input_label
     orig_height, orig_width = image.shape[:2]
 
@@ -94,7 +94,7 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
     # Adjust input_point according to image resizing
     scale_x = 1024 / orig_width
     scale_y = 1024 / orig_height
-    np_input_point_scaled = np_input_point * [scale_x, scale_y]
+    np_input_point_scaled = np_input_point * np.array([scale_x, scale_y])
 
     # Decoder inference
     ort_inputs_decoder = prepare_decoder_inputs(image_embedding, np_input_point_scaled, np_input_label)
