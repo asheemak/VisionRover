@@ -302,15 +302,19 @@ def splitData(features, labels, testRatio, shuffle=True):
         y_train, y_test = labels[:split_idx], labels[split_idx:]
 
     else:
-        raise ValueError("Each feature must have a corresponding label")
+        raise ValueError("Each sample must have a corresponding label")
     
     return x_train, x_test, y_train, y_test
 
 
 def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
-    
+    XTrain = XTrain.astype(np.float32)
+    yTrain = yTrain.astype(np.int32)
+
+    if (sampleType == cv2.ml.ROW_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[0]) or (sampleType == cv2.ml.COL_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[1]):
+        raise ValueError("Each sample must have a corresponding label")    
+
     model.train(XTrain, sampleType, yTrain)
-    
     return model
 
 
@@ -320,7 +324,13 @@ def predict(model, features):
     
     if len(features.shape) == 1:
         features = features.reshape(1, -1)
+    
+    elif model.getVarCount() == features.shape[0]:
+        features = features.T
 
+    elif model.getVarCount() != features.shape[1]:
+        raise ValueError(f"This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+    
     _, preds = model.predict(features)
     preds = preds.flatten()
     return preds
@@ -328,17 +338,32 @@ def predict(model, features):
 
 def evaluateModel(model, features, labels):
     features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+
+    if labels.flatten().shape[0] == features.shape[0]:
+        if model.getVarCount() != features.shape[1]:
+            raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+    
+    elif labels.flatten().shape[0] == features.shape[1]:
+        if model.getVarCount() != features.shape[0]:
+            raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+        
+        features = features.T
+        
+    else:
+        raise ValueError("Each sample must have a corresponding label")  
+    
     _, preds = model.predict(features)
 
     labels = labels.flatten()
     preds = preds.flatten()
     accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
-  
     num_classes = len(np.unique(labels))
     confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
-    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
-        confusion_mx[true_label, int(pred_label)] += 1
     
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[int(true_label), int(pred_label)] += 1
+
     return accuracy, confusion_mx
 
 
