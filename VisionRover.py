@@ -62,7 +62,7 @@ def loadOnnxSession(model_file_path):
 def sam(encoder_session, decoder_session, image, input_point, input_label):
     # Convert input_point (tuple) to NumPy array
     np_input_point = np.array(input_point, dtype=np.float32)[None, :]  # Shape (1, 2)
-    np_input_label = input_label
+    np_input_label =  np.array([input_label])
     orig_height, orig_width = image.shape[:2]
 
     def prepare_inputs_encoder(image, ort_session):
