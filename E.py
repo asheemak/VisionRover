@@ -76,7 +76,7 @@ def laplacianOfGaussian(image, sigma=1):
 def differenceOfGaussian(image, sigma1=1, sigma2=2):
     blurred1 = cv2.GaussianBlur(image, (0, 0), sigma1)
     blurred2 = cv2.GaussianBlur(image, (0, 0), sigma2)
-    dog_edges = blurred1 - blurred2
+    dog_edges = cv2.subtract(blurred1 - blurred2)
     return dog_edges
 
 def contourEccentricity(contour):
