@@ -399,3 +399,14 @@ def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
 
     return rf_model
 
+
+def loadImage(imagePath, colorConversion=-1):
+    image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
+
+    if image is None:
+        raise ValueError("Failed to load and decode Image")
+    
+    if colorConversion != -1:
+        image = cv2.cvtColor(image, colorConversion)
+    
+    return image
