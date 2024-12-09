@@ -99,34 +99,33 @@ def contourOuterRadius(contour):
 #########################################################
 
 def panoramaStitching(leftView, rightView):
+    def __drawInliersOutliers(leftImage, rightImage, srcPoint, dstPoint, mask):
 
-    def __drawInliersOutliers(left_image, right_image, src_point, dst_point, mask):
+        rows1, cols1, _ = leftImage.shape
+        rows2, cols2, _ = rightImage.shape
 
-        rows1, cols1, _ = left_image.shape
-        rows2, cols2, _ = right_image.shape
+        match_image = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
+        match_image[:rows1, :cols1, :] = np.dstack([leftImage])
+        match_image[:rows2, cols1:cols1 + cols2, :] = np.dstack([rightImage])
 
-        matchImage = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
-        matchImage[:rows1, :cols1, :] = np.dstack([left_image])
-        matchImage[:rows2, cols1:cols1 + cols2, :] = np.dstack([right_image])
-
-        matchImage2 = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
-        matchImage2[:rows1, :cols1, :] = np.dstack([left_image])
-        matchImage2[:rows2, cols1:cols1 + cols2, :] = np.dstack([right_image])
+        match_image2 = np.zeros((max(rows1, rows2), cols1 + cols2, 3), dtype='uint8')
+        match_image2[:rows1, :cols1, :] = np.dstack([leftImage])
+        match_image2[:rows2, cols1:cols1 + cols2, :] = np.dstack([rightImage])
 
         # draw lines
-        for i in range(src_point.shape[0]):
-            x1, y1 = src_point[i][0]
-            x2, y2 = dst_point[i][0]
+        for i in range(srcPoint.shape[0]):
+            x1, y1 = srcPoint[i][0]
+            x2, y2 = dstPoint[i][0]
 
             point1 = (int(x1), int(y1))
-            point2 = (int(x2 + left_image.shape[1]), int(y2))
+            point2 = (int(x2 + leftImage.shape[1]), int(y2))
 
             if mask[i][0] == 1:
-                cv2.line(matchImage, point1, point2, (0, 255, 0), 1)
+                cv2.line(match_image, point1, point2, (0, 255, 0), 1)
             else :
-                cv2.line(matchImage2, point1, point2, (255, 0, 0), 1)
+                cv2.line(match_image2, point1, point2, (255, 0, 0), 1)
 
-        return matchImage, matchImage2
+        return match_image, match_image2
     
 
 
@@ -155,15 +154,24 @@ def panoramaStitching(leftView, rightView):
 
     H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
 
-    Overlay_inlier_image, Overlay_outlier_image = __drawInliersOutliers(leftView, rightView, src_pts, dst_pts, mask)
+    overlay_inlier_img, overlay_outlier_img = __drawInliersOutliers(leftView, rightView, src_pts, dst_pts, mask)
 
     H_inv = np.linalg.inv(H)
 
-    stitchedImage = cv2.warpPerspective(rightView, H_inv, (leftView.shape[1] + rightView.shape[1], leftView.shape[0]))
+    img = cv2.warpPerspective(rightView, H_inv, (leftView.shape[1] + rightView.shape[1], leftView.shape[0]))
 
-    stitchedImage[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
+    img[0:leftView.shape[0], 0:leftView.shape[1]] = leftView
 
-    return Overlay_inlier_image, Overlay_outlier_image, stitchedImage
+    # Remove blank spaces
+    gray_stitched = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray_stitched, 1, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    if contours:
+        x, y, w, h = cv2.boundingRect(contours[0])
+        img = img[y:y + h, x:x + w]
+        
+    return img, overlay_inlier_img, overlay_outlier_img
 
 
 def imageNumOfHoles(image):
