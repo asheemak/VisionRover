@@ -3,7 +3,7 @@ import numpy as np
 import math
 import onnxruntime
 
-def sam(encoder_session, decoder_session, image, input_point, input_label):
+def sam(onnxruntime_sam_encoder, onnxruntime_sam_decoder, image, input_point, input_label):
     # Convert input_point (tuple) to NumPy array
     np_input_point = np.array(input_point, dtype=np.float32)[None, :]  # Shape (1, 2)
     np_input_label =  np.array([input_label])
@@ -31,8 +31,8 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
         return ort_inputs_decoder
 
     # Prepare the inputs for the encoder
-    inputs_encoder = prepare_inputs_encoder(image, encoder_session)
-    result_encoder = encoder_session.run(None, inputs_encoder)
+    inputs_encoder = prepare_inputs_encoder(image, onnxruntime_sam_encoder)
+    result_encoder = onnxruntime_sam_encoder.run(None, inputs_encoder)
     image_embedding = np.array(result_encoder[0])
 
     # Adjust input_point according to image resizing
@@ -42,7 +42,7 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
 
     # Decoder inference
     ort_inputs_decoder = prepare_decoder_inputs(image_embedding, np_input_point_scaled, np_input_label)
-    result_decoder = decoder_session.run(None, ort_inputs_decoder)
+    result_decoder = onnxruntime_sam_decoder.run(None, ort_inputs_decoder)
     low_res_logits, maskss = result_decoder
 
     # Apply a binary threshold to convert the mask probabilities to a binary mask
