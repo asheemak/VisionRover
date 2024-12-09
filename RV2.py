@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 import math
-import pywt
-import SimpleITK as sitk
 import onnxruntime
 
 def sam(encoder_session, decoder_session, image, input_point, input_label):
