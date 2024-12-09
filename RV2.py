@@ -49,5 +49,5 @@ def sam(onnxruntime_sam_encoder, onnxruntime_sam_decoder, image, input_point, in
     _, binaryMasks = cv2.threshold(maskss[0][2], 0, 255, cv2.THRESH_BINARY)
     # Resize the mask to match the original image dimensions
     binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
-
+    
     return binaryMasks
