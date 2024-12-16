@@ -55,7 +55,10 @@ def loadDicom(file_path):
     except Exception as e:
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
-
+def onnx_model_loader(modelPath):
+    session = onnxruntime.InferenceSession(modelPath, providers=["CPUExecutionProvider"])
+    return session
+	
 def loadOnnxSession(model_file_path):
     options = onnxruntime.SessionOptions()
     
