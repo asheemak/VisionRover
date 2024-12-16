@@ -3,6 +3,9 @@ import numpy as np
 import math
 import onnxruntime
 
+def load_onnx_model(modelPath):
+    return modelPath
+    
 def sam(onnxruntime_sam_encoder, onnxruntime_sam_decoder, image, input_point, input_label):
     # Convert input_point (tuple) to NumPy array
     np_input_point = np.array(input_point, dtype=np.float32)[None, :]  # Shape (1, 2)
