@@ -3,7 +3,7 @@ import numpy as np
 import math
 import onnxruntime
 
-def load_onnx_model(modelPath):
+def onnx_model_loader(modelPath):
     session = onnxruntime.InferenceSession(modelPath, providers=["CPUExecutionProvider"])
     return session
     
