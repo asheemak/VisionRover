@@ -4,7 +4,16 @@ import math
 import onnxruntime
 
 def load_onnx_model(modelPath):
-    return modelPath
+    session = onnxruntime.InferenceSession(modelPath, providers=["CPUExecutionProvider"])
+    variable_bind_key = None
+    
+    if "onnxruntime/sam/encoder.onnx" in modelPath:
+        variable_bind_key = "onnxruntime_sam_encoder"  
+        
+    elif "onnxruntime/sam/decoder.onnx" in modelPath:
+        variable_bind_key = "onnxruntime_sam_decoder"
+        
+    return (variable_bind_key, session)
     
 def sam(onnxruntime_sam_encoder, onnxruntime_sam_decoder, image, input_point, input_label):
     # Convert input_point (tuple) to NumPy array
