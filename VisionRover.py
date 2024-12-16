@@ -17,6 +17,13 @@ def loadImage(imagePath, colorConversion=-1):
     return image
 
 
+def loadImages(imagePath: str):
+    script_file = sys.modules['__main__'].__file__
+    script_dir = os.path.dirname(os.path.abspath(script_file))
+    files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
+    return [loadImage(file) for file in files]
+
+
 def loadDicom(file_path):
 	
     def remove_sensitive_data(metadata):
