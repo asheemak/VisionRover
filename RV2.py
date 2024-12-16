@@ -54,4 +54,4 @@ def sam(onnxruntime_sam_encoder, onnxruntime_sam_decoder, image, input_point, in
     # Resize the mask to match the original image dimensions
     binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
     
-    return binaryMasks, {"tst" : 12, "g": np.float32(1.2)}, [5,6,7], np.array([9,10,11,12]), {'pp1' : np.array([9,10,11,12.2], dtype=np.float64), "pp2" : {"nes" : np.str_("oh my")}}
+    return binaryMasks
