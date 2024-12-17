@@ -56,10 +56,6 @@ def loadDicom(file_path):
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
 def onnx_model_loader(modelPath):
-    session = onnxruntime.InferenceSession(modelPath, providers=["CPUExecutionProvider"])
-    return session
-	
-def loadOnnxSession(model_file_path):
     options = onnxruntime.SessionOptions()
     
     # Enable all graph optimizations
@@ -71,7 +67,7 @@ def loadOnnxSession(model_file_path):
     # Set the execution mode to sequential
     options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
 
-    session = onnxruntime.InferenceSession(model_file_path, sess_options=options)
+    session = onnxruntime.InferenceSession(modelPath, sess_options=options)
 
     return session
 
