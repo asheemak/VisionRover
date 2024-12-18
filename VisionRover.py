@@ -118,7 +118,7 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
     # Resize the mask to match the original image dimensions
     binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
 
-    return binaryMasks
+    return binaryMasks.astype(np.uint8)
 
 
 def contourSolidity(contour):
