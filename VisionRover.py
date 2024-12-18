@@ -14,9 +14,12 @@ def loadImage(imagePath, colorConversion=-1):
     if image is None:
         raise ValueError("Failed to load and decode Image")
     
-    if colorConversion != -1:
-        image = cv2.cvtColor(image, colorConversion)
+    if len(image.shape) > 2 and image.shape[2] == 3: 
+        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
     
+    elif len(image.shape) > 2 and image.shape[2] == 4: 
+        return cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+
     return image
 
 
