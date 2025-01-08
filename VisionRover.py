@@ -1,5 +1,8 @@
 import cv2
 import numpy as np
+import glob
+import os
+import sys
 
 def loadImage(imagePath, colorConversion=-1):
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
@@ -17,9 +20,6 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImages(imagePath: str):
-    import glob
-    import os
-    import sys
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
