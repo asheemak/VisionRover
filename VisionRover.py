@@ -1,12 +1,5 @@
 import cv2
-import sys
-import os
-import glob
 import numpy as np
-import math
-import pywt
-import SimpleITK as sitk
-import onnxruntime
 
 def loadImage(imagePath, colorConversion=-1):
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
@@ -24,6 +17,9 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImages(imagePath: str):
+    import glob
+    import os
+    import sys
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
@@ -31,6 +27,7 @@ def loadImages(imagePath: str):
 
 
 def loadDicom(file_path):
+    import SimpleITK as sitk
 	
     def remove_sensitive_data(metadata):
         """Remove personal data from DICOM metadata dictionary."""
@@ -59,6 +56,7 @@ def loadDicom(file_path):
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
 def onnx_model_loader(modelPath):
+    import onnxruntime
     options = onnxruntime.SessionOptions()
     
     # Enable all graph optimizations
@@ -413,6 +411,7 @@ def imageHolesArea(image):
     return area
 
 def minAreaRect(points):
+    import math
     center, size, angle = cv2.minAreaRect(points)
     radians = np.radians(angle)
     halfWidth = size[0] / 2.0
@@ -512,6 +511,7 @@ def pcaFusion(firstImage, secondImage):
     return fusedImage.astype(np.float32)
 
 def waveletFusion(firstImage, secondImage):
+    import pywt
     coeffs1 = pywt.dwt2(firstImage, 'haar')
     coeffs2 = pywt.dwt2(secondImage, 'haar')
     cA1, (cH1, cV1, cD1) = coeffs1
