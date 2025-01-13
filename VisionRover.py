@@ -1,12 +1,8 @@
 import cv2
-import sys
-import os
-import glob
 import numpy as np
-import math
-import pywt
-import SimpleITK as sitk
-import onnxruntime
+import glob
+import os
+import sys
 
 def loadImage(imagePath, colorConversion=-1):
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
@@ -14,9 +10,12 @@ def loadImage(imagePath, colorConversion=-1):
     if image is None:
         raise ValueError("Failed to load and decode Image")
     
-    if colorConversion != -1:
-        image = cv2.cvtColor(image, colorConversion)
+    if len(image.shape) > 2 and image.shape[2] == 3: 
+        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
     
+    elif len(image.shape) > 2 and image.shape[2] == 4: 
+        return cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+
     return image
 
 
@@ -28,6 +27,7 @@ def loadImages(imagePath: str):
 
 
 def loadDicom(file_path):
+    import SimpleITK as sitk
 	
     def remove_sensitive_data(metadata):
         """Remove personal data from DICOM metadata dictionary."""
@@ -56,6 +56,7 @@ def loadDicom(file_path):
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
 def onnx_model_loader(modelPath):
+    import onnxruntime
     options = onnxruntime.SessionOptions()
     
     # Enable all graph optimizations
@@ -118,7 +119,7 @@ def sam(encoder_session, decoder_session, image, input_point, input_label):
     # Resize the mask to match the original image dimensions
     binaryMasks = cv2.resize(binaryMasks, (image.shape[1], image.shape[0]))
 
-    return binaryMasks
+    return binaryMasks.astype(np.uint8)
 
 
 def contourSolidity(contour):
@@ -410,6 +411,7 @@ def imageHolesArea(image):
     return area
 
 def minAreaRect(points):
+    import math
     center, size, angle = cv2.minAreaRect(points)
     radians = np.radians(angle)
     halfWidth = size[0] / 2.0
@@ -509,6 +511,7 @@ def pcaFusion(firstImage, secondImage):
     return fusedImage.astype(np.float32)
 
 def waveletFusion(firstImage, secondImage):
+    import pywt
     coeffs1 = pywt.dwt2(firstImage, 'haar')
     coeffs2 = pywt.dwt2(secondImage, 'haar')
     cA1, (cH1, cV1, cD1) = coeffs1
