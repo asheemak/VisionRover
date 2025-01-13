@@ -418,3 +418,9 @@ def loadImage(imagePath, colorConversion=-1):
         image = cv2.cvtColor(image, colorConversion)
     
     return image
+
+def loadImages(imagePath: str, colorConversion=-1):
+    script_file = sys.modules['__main__'].__file__
+    script_dir = os.path.dirname(os.path.abspath(script_file))
+    files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
+    return [loadImage(file, colorConversion=colorConversion) for file in files]
