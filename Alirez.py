@@ -419,6 +419,27 @@ def loadImage(imagePath, colorConversion=-1):
     
     return image
 
+
+
+def loadImage(imagePath, colorConversion=-1):
+    image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
+
+    if image is None:
+        raise ValueError("Failed to load and decode Image")
+    
+    if len(image.shape) > 2 and image.shape[2] == 3: 
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) 
+    
+    elif len(image.shape) > 2 and image.shape[2] == 4: 
+        image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
+    
+
+    if colorConversion != -1:
+        image = cv2.cvtColor(image, colorConversion)
+
+    return image
+
+
 def loadImages(imagePath: str, colorConversion=-1):
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
