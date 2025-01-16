@@ -6,15 +6,30 @@ import sys
 
 def loadDirecoryEntriesInfo(directoryPath):
     import pandas as pd
+    from datetime import datetime
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     paths = glob.glob(os.path.join(script_dir, directoryPath), recursive=True)
-    filenames = [os.path.basename(path) for path in paths]
-    table = pd.DataFrame({
-        'filename': filenames,
-        'path': paths
-    })
-    return table
+    files_infos = []
+
+    for path in paths:
+        filename = os.path.basename(path)
+        file_size = os.path.getsize(path)
+        last_modified = os.path.getmtime(path)
+        last_modified_date = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
+        folder_name = os.path.dirname(path)
+        _, file_extension = os.path.splitext(path)
+        
+        files_infos.append({
+            'fileName' :  filename,
+            'folderName' : folder_name,
+            'size' : file_size,
+            'lastModifiedDate': last_modified_date,
+            'path' : path,
+            'extension' : file_extension
+        })
+
+    return pd.DataFrame(files_infos)
 	
 def loadImage(imagePath, colorConversion=-1):
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
