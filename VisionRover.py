@@ -4,6 +4,11 @@ import glob
 import os
 import sys
 
+def loadCsv(filePath):
+    import pandas as pd
+    df = pd.read_csv(filePath)
+    return df
+	
 def loadDirectoryEntriesInfo(directoryPath):
     import pandas as pd
     from datetime import datetime
