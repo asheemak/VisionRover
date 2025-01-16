@@ -4,7 +4,7 @@ import glob
 import os
 import sys
 
-def loadDirecoryEntriesInfo(directoryPath):
+def loadDirectoryEntriesInfo(directoryPath):
     import pandas as pd
     from datetime import datetime
     script_file = sys.modules['__main__'].__file__
