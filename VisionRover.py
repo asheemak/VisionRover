@@ -424,7 +424,7 @@ def panoramaStitching(leftView, rightView):
 
     if contours:
         x, y, w, h = cv2.boundingRect(contours[0])
-        img = img[y:y + h, x:x + w]
+        img = img[y:y + h, x:x + w-1]
         
     return img, overlay_inlier_img, overlay_outlier_img
 
