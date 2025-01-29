@@ -338,3 +338,16 @@ def fitLine(image, points, dist_type, param, reps, aeps,
     cv2.line(image, pt1, pt2, color_line, thickness)
 
     return image, vx, vy, x, y
+
+def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts):
+
+    data = np.float32(image.reshape(-1, 1))
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, criteria_max_iter, criteria_eps)
+    flags=cv2.KMEANS_RANDOM_CENTERS
+    ret, labels, centers = cv2.kmeans(data, k, None, criteria, attempts, flags)
+    
+    centers = np.uint8(centers)
+    segmented_img = centers[labels.flatten()]
+    segmented_img = segmented_img.reshape(image.shape)
+    
+    return segmented_img
