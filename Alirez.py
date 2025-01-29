@@ -445,3 +445,17 @@ def loadImages(imagePath: str, colorConversion=-1):
     script_dir = os.path.dirname(os.path.abspath(script_file))
     files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
     return [loadImage(file, colorConversion=colorConversion) for file in files]
+
+
+def fastFourierTransform(src, flags=cv2.DFT_COMPLEX_OUTPUT):
+    dft = cv2.dft(src.astype(np.float32), flags=flags)
+    dft_shift = np.fft.fftshift(dft)
+
+    if len(dft_shift.shape) == 3:
+        spectrum = 20 * np.log(cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1]))
+    elif len(dft_shift.shape) == 2:
+        spectrum = 20 * np.log(dft_shift)
+    else:
+        spectrum = dft_shift
+
+    return dft, dft_shift, spectrum
