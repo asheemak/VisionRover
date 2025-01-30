@@ -763,3 +763,7 @@ def fitLine(image, points, dist_type, param, reps, aeps, color_line, thickness):
     cv2.line(image, pt1, pt2, color_line, thickness)
 
     return image, vx, vy, x, y
+
+
+def featureSelector(features, indexes):
+    return [features[inx] for inx in indexes]
