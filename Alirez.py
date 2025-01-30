@@ -557,8 +557,24 @@ def scanBarcode(image):
 		img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
           
 		for s, p in zip(decoded_info, points):
-				img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+			img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
 		
 		return points, decoded_info, img
 	
 	return [], (), image
+
+
+def scanQRCode(image):
+    instance = cv2.QRCodeDetector()
+    retval, points = instance.detectMulti(image)
+
+    if retval:
+        ret, decoded_info, _ = instance.decodeMulti(image, points)
+        img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
+        
+        for s, p in zip(decoded_info, points):
+            img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+        
+        return points, decoded_info, img
+    
+    return [], (), image
