@@ -535,3 +535,14 @@ def filterFft(src, customFilter=False, filter=None, filterType=0, kernelType=0, 
 	dst = src * mask
 
 	return dst, mask[:, :, 0]
+
+
+def inverseFft(src):
+    f_ishift = np.fft.ifftshift(src)
+    dst = cv2.idft(f_ishift)
+    dst = cv2.magnitude(dst[:, :, 0], dst[:, :, 1])
+
+    dst = cv2.normalize(dst, None, 0, 255, cv2.NORM_MINMAX)
+    dst = np.uint8(dst)
+
+    return dst
