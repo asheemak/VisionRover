@@ -459,3 +459,79 @@ def fastFourierTransform(src, flags=cv2.DFT_COMPLEX_OUTPUT):
         spectrum = dft_shift
 
     return dft, dft_shift, spectrum
+
+
+def filterFft(src, customFilter=False, filter=None, filterType=0, kernelType=0, lowerBound=30, upperBound=60):
+	rows, cols, _ = src.shape
+	crow, ccol = rows // 2 , cols // 2  
+
+	mask = np.ones((rows, cols, 2), np.float32)
+
+	if customFilter:
+		mask[:, :, 0] = filter
+		mask[:, :, 1] = filter
+	
+	else:
+		if kernelType == 0: # gaussian
+			lp_kernel = cv2.getGaussianKernel(upperBound, -1)
+			lp_kernel = lp_kernel * lp_kernel.T
+			hp_kernel = cv2.getGaussianKernel(lowerBound, -1)
+			hp_kernel = hp_kernel * hp_kernel.T
+
+		elif kernelType == 1: # box
+			lp_kernel = np.ones((upperBound, upperBound), np.float32) / (upperBound * upperBound)
+			hp_kernel = np.ones((lowerBound, lowerBound), np.float32) / (lowerBound * lowerBound)
+
+		elif kernelType == 2: # hamming
+			lp_kernel = np.hamming(upperBound)[:, None] * np.hamming(upperBound)
+			hp_kernel = np.hamming(lowerBound)[:, None] * np.hamming(lowerBound)
+
+		elif kernelType == 3: # hanning
+			lp_kernel = np.hanning(upperBound)[:, None] * np.hanning(upperBound)
+			hp_kernel = np.hanning(lowerBound)[:, None] * np.hanning(lowerBound)
+
+		elif kernelType == 4: # circle
+			lp_kernel = np.zeros((upperBound, upperBound), np.float32)
+			hp_kernel = np.zeros((lowerBound, lowerBound), np.float32)
+			cv2.circle(lp_kernel, (upperBound//2, upperBound//2), upperBound//2, 1, -1)
+			cv2.circle(hp_kernel, (lowerBound//2, lowerBound//2), lowerBound//2, 1, -1)
+		
+
+		lp_kernel = lp_kernel / np.max(lp_kernel)  
+		hp_kernel = hp_kernel / np.max(hp_kernel)
+
+		if filterType == 0: # low pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			mask[:, :, 0] = lp_mask_full
+			mask[:, :, 1] = lp_mask_full
+
+		elif filterType == 1: # high pass
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+			mask[:, :, 0] = hp_mask_full
+			mask[:, :, 1] = hp_mask_full
+
+		elif filterType == 2: # band pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+			band_pass_mask = lp_mask_full * hp_mask_full
+			mask[:, :, 0] = band_pass_mask
+			mask[:, :, 1] = band_pass_mask
+		
+		elif filterType == 3: # stop pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+			stop_band_mask = 1 - (lp_mask_full * hp_mask_full)
+			mask[:, :, 0] = stop_band_mask
+			mask[:, :, 1] = stop_band_mask
+
+	dst = src * mask
+
+	return dst, mask[:, :, 0]
