@@ -766,6 +766,6 @@ def fitLine(image, points, dist_type, param, reps, aeps, color_line, thickness):
 
 
 def featureSelector(features, indexes):
-    if not indexes or len(indexex) == 0:
+    if not indexes or len(indexes) == 0:
         return []
     return features[:, indexes]
