@@ -578,3 +578,33 @@ def scanQRCode(image):
         return points, decoded_info, img
     
     return [], (), image
+
+
+def calibrateCameraChessboard(images,
+ 								patternSize=(6, 9),
+								criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001),
+								winSize=(5, 5),
+								zeroZone=(-1, -1)):
+
+	threedpoints = [] 
+	twodpoints = [] 
+
+	objectp3d = np.zeros((1, patternSize[0] * patternSize[1], 3), np.float32) 
+	objectp3d[0, :, :2] = np.mgrid[0:patternSize[0], 0:patternSize[1]].T.reshape(-1, 2) 
+
+	overlay = []
+
+	for image in images: 
+		grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
+		ret, corners = cv2.findChessboardCorners(grayColor, patternSize, cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE) 
+
+		if ret == True: 
+			threedpoints.append(objectp3d) 
+			corners2 = cv2.cornerSubPix(grayColor, corners, winSize, zeroZone, criteria) 
+			twodpoints.append(corners2) 
+			output = cv2.drawChessboardCorners(image.copy(), patternSize, corners2, ret) 
+			
+		overlay.append(output)
+          
+	ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(threedpoints, twodpoints, grayColor.shape[::-1], None, None) 
+	return ret, camera_matrix, dist_coeffs, rvecs, tvecs, overlay
