@@ -608,3 +608,20 @@ def calibrateCameraChessboard(images,
           
 	ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(threedpoints, twodpoints, grayColor.shape[::-1], None, None) 
 	return ret, camera_matrix, dist_coeffs, rvecs, tvecs, overlay
+
+
+def pruning(binaryImage, pruneLength=2):
+    thinned_image = cv2.ximgproc.thinning(binaryImage)
+    pruned_image = thinned_image.copy()
+    kernel = np.ones((3, 3), dtype=np.uint8)
+    
+    while True:
+        neighbor_count = cv2.filter2D((pruned_image > 0).astype(np.uint8), -1, kernel)
+        prune_mask = (pruned_image == 255) & (neighbor_count <= pruneLength)
+        
+        if not np.any(prune_mask):
+            break
+        
+        pruned_image[prune_mask] = 0
+
+    return pruned_image, thinned_image
