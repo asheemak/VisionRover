@@ -625,3 +625,19 @@ def pruning(binaryImage, pruneLength=2):
         pruned_image[prune_mask] = 0
 
     return pruned_image, thinned_image
+
+
+def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDiversity=0.2, maxEvolution=200, areaThresh=1.01, minMargin=0.003, edgeBlurSize=5):
+
+    mser = cv2.MSER_create(delta=delta,
+                           min_area=minArea,
+                           max_area=maxArea,
+                           max_variation=maxVariation,
+                           min_diversity=minDiversity,
+                           max_evolution=maxEvolution,
+                           area_threshold=areaThresh,
+                           min_margin=minMargin,
+                           edge_blur_size=edgeBlurSize)
+
+    msers, bboxes = mser.detectRegions(image)
+    return msers, bboxes
