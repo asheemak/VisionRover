@@ -11,6 +11,10 @@ def loadCsv(filePath):
     return df
 	
 def loadDirectoryEntriesInfo(directoryPath):
+
+    if directoryPath.endswith("/"):
+    	directoryPath = directoryPath + "*"
+	    
     directoryPath = re.sub(r'(?<!\*)\*(?!\*)', '**', directoryPath)
     import pandas as pd
     from datetime import datetime
@@ -59,6 +63,10 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImages(imagePath: str, colorConversion=-1):
+
+    if imagePath.endswith("/"):
+    	imagePath = imagePath + "*"
+    
     imagePath = re.sub(r'(?<!\*)\*(?!\*)', '**', imagePath)
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
