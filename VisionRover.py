@@ -3,6 +3,7 @@ import numpy as np
 import glob
 import os
 import sys
+import re
 
 def loadCsv(filePath):
     import pandas as pd
@@ -10,6 +11,7 @@ def loadCsv(filePath):
     return df
 	
 def loadDirectoryEntriesInfo(directoryPath):
+    directoryPath = re.sub(r'(?<!\*)\*(?!\*)', '**', directoryPath)
     import pandas as pd
     from datetime import datetime
     script_file = sys.modules['__main__'].__file__
@@ -57,6 +59,7 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImages(imagePath: str, colorConversion=-1):
+    imagePath = re.sub(r'(?<!\*)\*(?!\*)', '**', imagePath)
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
