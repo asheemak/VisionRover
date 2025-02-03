@@ -12,7 +12,7 @@ def loadCsv(filePath):
 	
 def loadDirectoryEntriesInfo(directoryPath):
 
-    if directoryPath.endswith("/"):
+    if directoryPath.endswith(os.path.sep) or directoryPath.endswith("/"):
     	directoryPath = directoryPath + "*"
 	    
     directoryPath = re.sub(r'(?<!\*)\*(?!\*)', '**', directoryPath)
@@ -64,7 +64,7 @@ def loadImage(imagePath, colorConversion=-1):
 
 def loadImages(imagePath: str, colorConversion=-1):
 
-    if imagePath.endswith("/"):
+    if imagePath.endswith(os.path.sep) or imagePath.endswith("/"):
     	imagePath = imagePath + "*"
     
     imagePath = re.sub(r'(?<!\*)\*(?!\*)', '**', imagePath)
