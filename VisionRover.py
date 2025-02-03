@@ -15,6 +15,7 @@ def loadDirectoryEntriesInfo(directoryPath):
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     paths = glob.glob(os.path.join(script_dir, directoryPath), recursive=True)
+    paths = [p for p in paths if os.path.isfile(p)]
     files_infos = []
     paths = sorted(paths)
     for path in paths:
@@ -59,6 +60,7 @@ def loadImages(imagePath: str, colorConversion=-1):
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
     files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
+    files = [f for f in files if os.path.isfile(f)]
     files = sorted(files)
     return [loadImage(file, colorConversion=colorConversion) for file in files]
 
