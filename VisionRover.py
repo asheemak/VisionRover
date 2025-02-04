@@ -5,6 +5,41 @@ import os
 import sys
 import re
 
+def loadPreTrainedModel(filePath):
+
+    loader_mapping = {
+        "opencv_ml_svm": cv2.ml.SVM.load,
+        "opencv_ml_rtrees": cv2.ml.RTrees.load,
+        "opencv_ml_knn": cv2.ml.KNearest.load,
+        "opencv_ml_ann_mlp": cv2.ml.ANN_MLP.load,
+        "opencv_ml_boost": cv2.ml.Boost.load,
+        "opencv_ml_logistic_regression": cv2.ml.LogisticRegression.load,
+        "opencv_ml_normal_bayes_classifier": cv2.ml.NormalBayesClassifier.load,
+        "opencv_ml_em": cv2.ml.EM.load,
+    }
+
+    fs = cv2.FileStorage(filePath, cv2.FILE_STORAGE_READ)
+
+    if not fs.isOpened():
+        raise ValueError("Failed to open pretrained model")
+    
+    try:
+        model_type_key = None
+        for key in loader_mapping:
+            node = fs.getNode(key)
+            if not node.empty():
+                model_type_key = key
+                break
+    finally:
+        fs.release()
+
+    if not model_type_key:
+        raise ValueError("Pretrained model not detected")
+    
+    model = loader_mapping[model_type_key](filePath)
+
+    return model
+
 def loadCsv(filePath):
     filePath = __normalizeFilePath(filePath)
     import pandas as pd
