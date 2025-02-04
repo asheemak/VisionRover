@@ -6,21 +6,32 @@ import sys
 import re
 
 def loadCsv(filePath):
+    file_path = __normalizeFilePath(file_path)
     import pandas as pd
     df = pd.read_csv(filePath)
     return df
 	
+def __normalizeFilePath(path: str):
+    script_file = sys.modules['__main__'].__file__
+    script_dir = os.path.dirname(os.path.abspath(script_file))
+
+    if not os.path.isabs(path):
+        path = os.path.join(script_dir, path)
+
+    return path
+
 def loadDirectoryEntriesInfo(directoryPath):
 
     if directoryPath.endswith(os.path.sep) or directoryPath.endswith("/"):
-    	directoryPath = directoryPath + "*"
-	    
+        directoryPath = directoryPath + "*"
+
     directoryPath = re.sub(r'(?<!\*)\*(?!\*)', '**', directoryPath)
+
     import pandas as pd
     from datetime import datetime
-    script_file = sys.modules['__main__'].__file__
-    script_dir = os.path.dirname(os.path.abspath(script_file))
-    paths = glob.glob(os.path.join(script_dir, directoryPath), recursive=True)
+
+    directoryPath = __normalizeFilePath(directoryPath)
+    paths = glob.glob(directoryPath, recursive=True)
     paths = [p for p in paths if os.path.isfile(p)]
     files_infos = []
     paths = sorted(paths)
@@ -44,6 +55,9 @@ def loadDirectoryEntriesInfo(directoryPath):
     return pd.DataFrame(files_infos)
 	
 def loadImage(imagePath, colorConversion=-1):
+
+    imagePath = __normalizeFilePath(imagePath)
+
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
 
     if image is None:
@@ -65,12 +79,11 @@ def loadImage(imagePath, colorConversion=-1):
 def loadImages(imagePath: str, colorConversion=-1):
 
     if imagePath.endswith(os.path.sep) or imagePath.endswith("/"):
-    	imagePath = imagePath + "*"
-    
+        imagePath = imagePath + "*"
+
     imagePath = re.sub(r'(?<!\*)\*(?!\*)', '**', imagePath)
-    script_file = sys.modules['__main__'].__file__
-    script_dir = os.path.dirname(os.path.abspath(script_file))
-    files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
+    imagePath = __normalizeFilePath(imagePath)
+    files = glob.glob(imagePath, recursive=True)
     files = [f for f in files if os.path.isfile(f)]
     files = sorted(files)
     return [loadImage(file, colorConversion=colorConversion) for file in files]
@@ -78,7 +91,7 @@ def loadImages(imagePath: str, colorConversion=-1):
 
 def loadDicom(file_path):
     import SimpleITK as sitk
-	
+    file_path = __normalizeFilePath(file_path)
     def remove_sensitive_data(metadata):
         """Remove personal data from DICOM metadata dictionary."""
         sensitive_keys = [
