@@ -6,7 +6,7 @@ import sys
 import re
 
 def loadPreTrainedModel(filePath):
-
+    filePath = __normalizeFilePath(filePath)
     loader_mapping = {
         "opencv_ml_svm": cv2.ml.SVM.load,
         "opencv_ml_rtrees": cv2.ml.RTrees.load,
