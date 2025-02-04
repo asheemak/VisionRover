@@ -6,7 +6,7 @@ import sys
 import re
 
 def loadCsv(filePath):
-    file_path = __normalizeFilePath(file_path)
+    filePath = __normalizeFilePath(filePath)
     import pandas as pd
     df = pd.read_csv(filePath)
     return df
