@@ -651,3 +651,13 @@ def knn(k=5, isClassifier=True):
     knn_model.setIsClassifier(isClassifier)
 
     return knn_model
+
+
+def emCluster(nClusters=2, covarianceMatrixType=cv2.ml.EM_COV_MAT_SPHERICAL, termCriteria=(cv2.TERM_CRITERIA_COUNT + cv2.TERM_CRITERIA_EPS, 100, 1e-6)):
+    em_model = cv2.ml.EM_create()
+
+    em_model.setClustersNumber(nClusters)
+    em_model.setCovarianceMatrixType(covarianceMatrixType)
+    em_model.setTermCriteria(termCriteria)
+
+    return em_model
