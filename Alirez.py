@@ -459,3 +459,185 @@ def fastFourierTransform(src, flags=cv2.DFT_COMPLEX_OUTPUT):
         spectrum = dft_shift
 
     return dft, dft_shift, spectrum
+
+
+def filterFft(src, customFilter=False, filter=None, filterType=0, kernelType=0, lowerBound=30, upperBound=60):
+	rows, cols, _ = src.shape
+	crow, ccol = rows // 2 , cols // 2  
+
+	mask = np.ones((rows, cols, 2), np.float32)
+
+	if customFilter:
+		mask[:, :, 0] = filter
+		mask[:, :, 1] = filter
+	
+	else:
+		if kernelType == 0: # gaussian
+			lp_kernel = cv2.getGaussianKernel(upperBound, -1)
+			lp_kernel = lp_kernel * lp_kernel.T
+			hp_kernel = cv2.getGaussianKernel(lowerBound, -1)
+			hp_kernel = hp_kernel * hp_kernel.T
+
+		elif kernelType == 1: # box
+			lp_kernel = np.ones((upperBound, upperBound), np.float32) / (upperBound * upperBound)
+			hp_kernel = np.ones((lowerBound, lowerBound), np.float32) / (lowerBound * lowerBound)
+
+		elif kernelType == 2: # hamming
+			lp_kernel = np.hamming(upperBound)[:, None] * np.hamming(upperBound)
+			hp_kernel = np.hamming(lowerBound)[:, None] * np.hamming(lowerBound)
+
+		elif kernelType == 3: # hanning
+			lp_kernel = np.hanning(upperBound)[:, None] * np.hanning(upperBound)
+			hp_kernel = np.hanning(lowerBound)[:, None] * np.hanning(lowerBound)
+
+		elif kernelType == 4: # circle
+			lp_kernel = np.zeros((upperBound, upperBound), np.float32)
+			hp_kernel = np.zeros((lowerBound, lowerBound), np.float32)
+			cv2.circle(lp_kernel, (upperBound//2, upperBound//2), upperBound//2, 1, -1)
+			cv2.circle(hp_kernel, (lowerBound//2, lowerBound//2), lowerBound//2, 1, -1)
+		
+
+		lp_kernel = lp_kernel / np.max(lp_kernel)  
+		hp_kernel = hp_kernel / np.max(hp_kernel)
+
+		if filterType == 0: # low pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			mask[:, :, 0] = lp_mask_full
+			mask[:, :, 1] = lp_mask_full
+
+		elif filterType == 1: # high pass
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+			mask[:, :, 0] = hp_mask_full
+			mask[:, :, 1] = hp_mask_full
+
+		elif filterType == 2: # band pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+			band_pass_mask = lp_mask_full * hp_mask_full
+			mask[:, :, 0] = band_pass_mask
+			mask[:, :, 1] = band_pass_mask
+		
+		elif filterType == 3: # stop pass
+			lp_mask_full = np.zeros((rows, cols), np.float32)
+			hp_mask_full = np.ones((rows, cols), np.float32)
+			lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+			hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+			stop_band_mask = 1 - (lp_mask_full * hp_mask_full)
+			mask[:, :, 0] = stop_band_mask
+			mask[:, :, 1] = stop_band_mask
+
+	dst = src * mask
+
+	return dst, mask[:, :, 0]
+
+
+def inverseFft(src):
+    f_ishift = np.fft.ifftshift(src)
+    dst = cv2.idft(f_ishift)
+    dst = cv2.magnitude(dst[:, :, 0], dst[:, :, 1])
+
+    dst = cv2.normalize(dst, None, 0, 255, cv2.NORM_MINMAX)
+    dst = np.uint8(dst)
+
+    return dst
+
+
+def scanBarcode(image):
+	instance = cv2.barcode.BarcodeDetector()
+	retval, points = instance.detectMulti(image)
+
+	if retval:
+		ret, decoded_info, _ = instance.decodeMulti(image, points)
+		img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
+          
+		for s, p in zip(decoded_info, points):
+			img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+		
+		return points, decoded_info, img
+	
+	return [], (), image
+
+
+def scanQRCode(image):
+    instance = cv2.QRCodeDetector()
+    retval, points = instance.detectMulti(image)
+
+    if retval:
+        ret, decoded_info, _ = instance.decodeMulti(image, points)
+        img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
+        
+        for s, p in zip(decoded_info, points):
+            img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+        
+        return points, decoded_info, img
+    
+    return [], (), image
+
+
+def calibrateCameraChessboard(images,
+ 								patternSize=(6, 9),
+								criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001),
+								winSize=(5, 5),
+								zeroZone=(-1, -1)):
+
+	threedpoints = [] 
+	twodpoints = [] 
+
+	objectp3d = np.zeros((1, patternSize[0] * patternSize[1], 3), np.float32) 
+	objectp3d[0, :, :2] = np.mgrid[0:patternSize[0], 0:patternSize[1]].T.reshape(-1, 2) 
+
+	overlay = []
+
+	for image in images: 
+		grayColor = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) 
+		ret, corners = cv2.findChessboardCorners(grayColor, patternSize, cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE) 
+
+		if ret == True: 
+			threedpoints.append(objectp3d) 
+			corners2 = cv2.cornerSubPix(grayColor, corners, winSize, zeroZone, criteria) 
+			twodpoints.append(corners2) 
+			output = cv2.drawChessboardCorners(image.copy(), patternSize, corners2, ret) 
+			
+		overlay.append(output)
+          
+	ret, camera_matrix, dist_coeffs, rvecs, tvecs = cv2.calibrateCamera(threedpoints, twodpoints, grayColor.shape[::-1], None, None) 
+	return ret, camera_matrix, dist_coeffs, rvecs, tvecs, overlay
+
+
+def pruning(binaryImage, pruneLength=2):
+    thinned_image = cv2.ximgproc.thinning(binaryImage)
+    pruned_image = thinned_image.copy()
+    kernel = np.ones((3, 3), dtype=np.uint8)
+    
+    while True:
+        neighbor_count = cv2.filter2D((pruned_image > 0).astype(np.uint8), -1, kernel)
+        prune_mask = (pruned_image == 255) & (neighbor_count <= pruneLength)
+        
+        if not np.any(prune_mask):
+            break
+        
+        pruned_image[prune_mask] = 0
+
+    return pruned_image, thinned_image
+
+
+def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDiversity=0.2, maxEvolution=200, areaThresh=1.01, minMargin=0.003, edgeBlurSize=5):
+
+    mser = cv2.MSER_create(delta=delta,
+                           min_area=minArea,
+                           max_area=maxArea,
+                           max_variation=maxVariation,
+                           min_diversity=minDiversity,
+                           max_evolution=maxEvolution,
+                           area_threshold=areaThresh,
+                           min_margin=minMargin,
+                           edge_blur_size=edgeBlurSize)
+
+    msers, bboxes = mser.detectRegions(image)
+    return msers, bboxes

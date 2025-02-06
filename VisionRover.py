@@ -3,18 +3,71 @@ import numpy as np
 import glob
 import os
 import sys
+import re
+
+def loadMlModel(filePath):
+    filePath = __normalizeFilePath(filePath)
+    loader_mapping = {
+        "opencv_ml_svm": cv2.ml.SVM.load,
+        "opencv_ml_rtrees": cv2.ml.RTrees.load,
+        "opencv_ml_knn": cv2.ml.KNearest.load,
+        "opencv_ml_ann_mlp": cv2.ml.ANN_MLP.load,
+        "opencv_ml_boost": cv2.ml.Boost.load,
+        "opencv_ml_logistic_regression": cv2.ml.LogisticRegression.load,
+        "opencv_ml_normal_bayes_classifier": cv2.ml.NormalBayesClassifier.load,
+        "opencv_ml_em": cv2.ml.EM.load,
+    }
+
+    fs = cv2.FileStorage(filePath, cv2.FILE_STORAGE_READ)
+
+    if not fs.isOpened():
+        raise ValueError("Failed to open pretrained model")
+    
+    try:
+        model_type_key = None
+        for key in loader_mapping:
+            node = fs.getNode(key)
+            if not node.empty():
+                model_type_key = key
+                break
+    finally:
+        fs.release()
+
+    if not model_type_key:
+        raise ValueError("Pretrained model not detected")
+    
+    model = loader_mapping[model_type_key](filePath)
+
+    return model
 
 def loadCsv(filePath):
+    filePath = __normalizeFilePath(filePath)
     import pandas as pd
     df = pd.read_csv(filePath)
     return df
 	
-def loadDirectoryEntriesInfo(directoryPath):
-    import pandas as pd
-    from datetime import datetime
+def __normalizeFilePath(path: str):
     script_file = sys.modules['__main__'].__file__
     script_dir = os.path.dirname(os.path.abspath(script_file))
-    paths = glob.glob(os.path.join(script_dir, directoryPath), recursive=True)
+
+    if not os.path.isabs(path):
+        path = os.path.join(script_dir, path)
+
+    return path
+
+def loadDirectoryEntriesInfo(directoryPath):
+
+    if directoryPath.endswith(os.path.sep) or directoryPath.endswith("/"):
+        directoryPath = directoryPath + "*"
+
+    directoryPath = re.sub(r'(?<!\*)\*(?!\*)', '**', directoryPath)
+
+    import pandas as pd
+    from datetime import datetime
+
+    directoryPath = __normalizeFilePath(directoryPath)
+    paths = glob.glob(directoryPath, recursive=True)
+    paths = [p for p in paths if os.path.isfile(p)]
     files_infos = []
     paths = sorted(paths)
     for path in paths:
@@ -37,6 +90,9 @@ def loadDirectoryEntriesInfo(directoryPath):
     return pd.DataFrame(files_infos)
 	
 def loadImage(imagePath, colorConversion=-1):
+
+    imagePath = __normalizeFilePath(imagePath)
+
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
 
     if image is None:
@@ -56,16 +112,21 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImages(imagePath: str, colorConversion=-1):
-    script_file = sys.modules['__main__'].__file__
-    script_dir = os.path.dirname(os.path.abspath(script_file))
-    files = glob.glob(os.path.join(script_dir, imagePath), recursive=True)
+
+    if imagePath.endswith(os.path.sep) or imagePath.endswith("/"):
+        imagePath = imagePath + "*"
+
+    imagePath = re.sub(r'(?<!\*)\*(?!\*)', '**', imagePath)
+    imagePath = __normalizeFilePath(imagePath)
+    files = glob.glob(imagePath, recursive=True)
+    files = [f for f in files if os.path.isfile(f)]
     files = sorted(files)
     return [loadImage(file, colorConversion=colorConversion) for file in files]
 
 
 def loadDicom(file_path):
     import SimpleITK as sitk
-	
+    file_path = __normalizeFilePath(file_path)
     def remove_sensitive_data(metadata):
         """Remove personal data from DICOM metadata dictionary."""
         sensitive_keys = [
@@ -763,3 +824,9 @@ def fitLine(image, points, dist_type, param, reps, aeps, color_line, thickness):
     cv2.line(image, pt1, pt2, color_line, thickness)
 
     return image, vx, vy, x, y
+
+
+def featureSelector(features, indexes):
+    if not indexes or len(indexes) == 0:
+        return []
+    return features[:, indexes]
