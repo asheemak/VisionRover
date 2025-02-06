@@ -641,3 +641,13 @@ def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDivers
 
     msers, bboxes = mser.detectRegions(image)
     return msers, bboxes
+
+
+
+def knn(k=5, isClassifier=True):
+    knn_model = cv2.ml.KNearest_create()
+
+    knn_model.setDefaultK(k)
+    knn_model.setIsClassifier(isClassifier)
+
+    return knn_model
