@@ -351,3 +351,21 @@ def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts):
     segmented_img = segmented_img.reshape(image.shape)
     
     return segmented_img
+
+def logisticRegression(learningRate, iterations, regularization, trainMethod, miniBatchSize):
+    model = cv2.ml.LogisticRegression_create()
+    model.setLearningRate(learningRate)
+    model.setIterations(iterations)
+    model.setRegularization(regularization)
+    model.setTrainMethod(trainMethod)
+    model.setMiniBatchSize(miniBatchSize)
+    return model
+
+def zscore(features):
+    features = np.asarray(features)
+    reshaped = features.reshape(features.shape[0], 1, features.shape[1])
+    mean, std = cv2.meanStdDev(reshaped)
+    mean = mean.ravel()
+    std = std.ravel()
+    Mat = (features - mean) / (std + 1e-8)
+    return mat, mean, std 
