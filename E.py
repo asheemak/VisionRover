@@ -368,4 +368,60 @@ def zscore(features):
     mean = mean.ravel()
     std = std.ravel()
     Mat = (features - mean) / (std + 1e-8)
-    return mat, mean, std 
+    return Mat, mean, std 
+
+def normMinMax(features):
+    features = np.asarray(features)
+    reshaped = features.reshape(features.shape[0], 1, features.shape[1])
+    channels = cv2.split(reshaped)
+    min_vals = []
+    max_vals = []
+    for ch in channels:
+        min_val, max_val, _, _ = cv2.minMaxLoc(ch)
+        min_vals.append(min_val)
+        max_vals.append(max_val)
+    
+    min_vals = np.array(min_vals)
+    max_vals = np.array(max_vals)
+    
+    # Perform min-max normalization: (x - min) / (max - min)
+    mat = (features - min_vals) / ((max_vals - min_vals) + 1e-8)
+    return mat, min_vals, max_vals
+
+def anovaFeatureRank(X, y):
+    
+    #X: shape (n_samples, n_features)
+    #y: binary labels (0 or 1)
+    
+    X_class0 = X[y == 0]
+    X_class1 = X[y == 1]
+
+    n0 = X_class0.shape[0]
+    n1 = X_class1.shape[0]
+    n = n0 + n1
+
+    mean0 = np.mean(X_class0, axis=0)
+    mean1 = np.mean(X_class1, axis=0)
+    mean_all = np.mean(X, axis=0)
+
+    # Between-group sum of squares
+    SSB = n0 * (mean0 - mean_all) ** 2 + n1 * (mean1 - mean_all) ** 2
+
+    # Within-group sum of squares
+    SSW0 = np.sum((X_class0 - mean0) ** 2, axis=0)
+    SSW1 = np.sum((X_class1 - mean1) ** 2, axis=0)
+    SSW = SSW0 + SSW1
+
+    df_between = 1      # for 2 classes
+    df_within = n - 2
+
+    F = (SSB / df_between) / (SSW / df_within)
+    feature_ranks  = np.argsort(F)[::-1]
+    return feature_ranks 
+
+def PCA(data, n_components):
+
+    mean, eigenvectors = cv2.PCACompute(data, mean=None, maxComponents=n_components)
+    transformed_data = cv2.PCAProject(data, mean, eigenvectors)
+    
+    return transformed_data, mean, eigenvectors
