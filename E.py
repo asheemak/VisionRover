@@ -448,3 +448,19 @@ def siftDetectCompute(image, nfeatures, nOctaveLayers, contrastThreshold, edgeTh
 
     keypoints, descriptors = sift.detectAndCompute(image, None)
     return keypoints, descriptors
+
+
+def orbDetectCompute(image, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, firstLevel=0, WTA_K=2, patchSize=31):
+    orb = cv2.ORB_create(
+        nfeatures=nfeatures,
+        scaleFactor=scaleFactor,
+        nlevels=nlevels,
+        edgeThreshold=edgeThreshold,
+        firstLevel=firstLevel,
+        WTA_K=WTA_K,
+        scoreType=cv2.ORB_HARRIS_SCORE,
+        patchSize=patchSize
+    )
+    # Detect keypoints and compute descriptors
+    keypoints, descriptors = orb.detectAndCompute(image, None)
+    return keypoints, descriptors
