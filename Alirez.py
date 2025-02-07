@@ -661,3 +661,14 @@ def emCluster(nClusters=2, covarianceMatrixType=cv2.ml.EM_COV_MAT_SPHERICAL, ter
     em_model.setTermCriteria(termCriteria)
 
     return em_model
+
+
+def mlp(layerSizes=[5, 10, 1], activation=cv2.ml.ANN_MLP_SIGMOID_SYM, alpha=0.1, maxIter=10000):
+    
+    mlp_model = cv2.ml.ANN_MLP_create()
+    mlp_model.setLayerSizes(np.array(layerSizes, dtype=np.int32))
+    mlp_model.setActivationFunction(activation)
+    mlp_model.setTrainMethod(cv2.ml.ANN_MLP_BACKPROP, alpha)
+    mlp_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, maxIter, 1e-6))
+    
+    return mlp_model
