@@ -425,3 +425,26 @@ def PCA(data, n_components):
     transformed_data = cv2.PCAProject(data, mean, eigenvectors)
     
     return transformed_data, mean, eigenvectors
+
+def boost(weakCount=100, weightTrimRate=0.95, maxDepth=1):
+    useSurrogates=False
+    model = cv2.ml.Boost_create()
+    model.setBoostType(cv2.ml.BOOST_DISCRETE)
+    model.setWeakCount(weakCount)
+    model.setWeightTrimRate(weightTrimRate)
+    model.setMaxDepth(maxDepth)
+    model.setUseSurrogates(useSurrogates)
+    return model
+
+def siftDetectCompute(image, nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma):
+
+    sift = cv2.SIFT_create(
+        nfeatures=nfeatures,
+        nOctaveLayers=nOctaveLayers,
+        contrastThreshold=contrastThreshold,
+        edgeThreshold=edgeThreshold,
+        sigma=sigma
+    )
+
+    keypoints, descriptors = sift.detectAndCompute(image, None)
+    return keypoints, descriptors
