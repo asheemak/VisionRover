@@ -106,6 +106,13 @@ def loadImage(imagePath, colorConversion=-1):
     
 
     if colorConversion != -1:
+        if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
+            if colorConversion not in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+                raise ValueError("This color convertion is not supported for 1ch image")
+        else:
+            if colorConversion in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+                raise ValueError(f"This color convertion is not supported for {image.shape[2]}ch image")
+                
         image = cv2.cvtColor(image, colorConversion)
 
     return image
