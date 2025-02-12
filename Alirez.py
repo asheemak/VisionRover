@@ -422,6 +422,9 @@ def loadImage(imagePath, colorConversion=-1):
 
 
 def loadImage(imagePath, colorConversion=-1):
+
+    imagePath = __normalizeFilePath(imagePath)
+    
     image = cv2.imread(imagePath, cv2.IMREAD_UNCHANGED)
 
     if image is None:
@@ -433,7 +436,7 @@ def loadImage(imagePath, colorConversion=-1):
     elif len(image.shape) > 2 and image.shape[2] == 4: 
         image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGBA)
     
-    
+
     if colorConversion != -1:
         if len(image.shape) == 2 or (len(image.shape) == 3 and image.shape[2] == 1):
             if colorConversion not in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
