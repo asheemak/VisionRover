@@ -672,3 +672,11 @@ def mlp(layerSizes=[5, 10, 1], activation=cv2.ml.ANN_MLP_SIGMOID_SYM, alpha=0.1,
     mlp_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, maxIter, 1e-6))
     
     return mlp_model
+
+
+def copyImage(image):
+    if isinstance(image, np.ndarray) and image.size > 0 and (len(image.shape) == 2 or (len(image.shape) == 3 and (image.shape[2] == 1 or image.shape[2] == 3 or image.shape[2] == 4))) and not np.issubdtype(image.dtype, np.str_):
+        img = image.copy()
+        return img
+    else:
+        raise ValueError("the input parameter is not an image")
