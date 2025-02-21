@@ -464,3 +464,41 @@ def orbDetectCompute(image, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThres
     # Detect keypoints and compute descriptors
     keypoints, descriptors = orb.detectAndCompute(image, None)
     return keypoints, descriptors
+
+def GLCM(image, distance, angle):
+    max_gray_level = image.max() + 1
+    rows, cols = image.shape
+    glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
+    
+    # Compute the pixel offset for the given distance and angle.
+    dx, dy = int(np.cos(angle) * distance), int(np.sin(angle) * distance)
+    
+    # Compute shifted indices.
+    row_indices, col_indices = np.indices((rows, cols))
+    shifted_row = row_indices + dy
+    shifted_col = col_indices + dx
+    
+    # Create a mask for valid indices.
+    valid = (
+        (shifted_row >= 0) & (shifted_row < rows) &
+        (shifted_col >= 0) & (shifted_col < cols)
+    )
+    
+    # Select current and neighbor pixels.
+    current_pixels = image[valid]
+    neighbor_pixels = image[shifted_row[valid], shifted_col[valid]]
+    
+    # Compute the 2D histogram.
+    glcm, _, _ = np.histogram2d(
+        current_pixels,
+        neighbor_pixels,
+        bins=[max_gray_level, max_gray_level],
+        range=[[0, max_gray_level], [0, max_gray_level]]
+    )
+    
+    # Normalize the GLCM.
+    total = glcm.sum()
+    if total > 0:
+        glcm /= total
+        
+    return glcm    
