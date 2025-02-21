@@ -465,7 +465,7 @@ def orbDetectCompute(image, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThres
     keypoints, descriptors = orb.detectAndCompute(image, None)
     return keypoints, descriptors
 
-def GLCM(image, distance, angle):
+def gLCM(image, distance, angle):
     max_gray_level = image.max() + 1
     rows, cols = image.shape
     glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
