@@ -47,13 +47,15 @@ def loadCsv(filePath):
     return df
 	
 def __normalizeFilePath(path: str):
-    script_file = sys.modules['__main__'].__file__
-    script_dir = os.path.dirname(os.path.abspath(script_file))
 
     if not os.path.isabs(path):
-        path = os.path.join(script_dir, path)
+        path = os.path.join(__getScriptDir(), path)
 
-    return path
+    return os.path.normpath(path)
+
+def __getScriptDir():
+    script_file = sys.modules['__main__'].__file__
+    return os.path.dirname(os.path.abspath(script_file))
 
 def loadDirectoryEntriesInfo(directoryPath):
 
@@ -70,10 +72,12 @@ def loadDirectoryEntriesInfo(directoryPath):
     paths = [p for p in paths if os.path.isfile(p)]
     files_infos = []
     paths = sorted(paths)
-    for path in paths:
+    scriptDirectoryPathLength = len(__getScriptDir())
+    for full_path in paths:
+        path = "." + full_path[scriptDirectoryPathLength:]
         filename = os.path.basename(path)
-        file_size = os.path.getsize(path)
-        last_modified = os.path.getmtime(path)
+        file_size = os.path.getsize(full_path)
+        last_modified = os.path.getmtime(full_path)
         last_modified_date = datetime.fromtimestamp(last_modified).strftime('%Y-%m-%d %H:%M:%S')
         folder_name = os.path.dirname(path)
         _, file_extension = os.path.splitext(path)
