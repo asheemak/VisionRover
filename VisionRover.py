@@ -849,10 +849,15 @@ def scanBarcode(image):
 
 	if retval:
 		ret, decoded_info, _ = instance.decodeMulti(image, points)
-		img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
-          
+
+		if len(image.shape) == 2 or image.shape[2] == 1:
+			img = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+		else:
+			img = image.copy()
+			
+		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0), 2)
 		for s, p in zip(decoded_info, points):
-			img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+				img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
 		
 		return points, decoded_info, img
 	
@@ -860,19 +865,25 @@ def scanBarcode(image):
 
 
 def scanQRCode(image):
-    instance = cv2.QRCodeDetector()
-    retval, points = instance.detectMulti(image)
+	instance = cv2.QRCodeDetector()
+	retval, points = instance.detectMulti(image)
 
-    if retval:
-        ret, decoded_info, _ = instance.decodeMulti(image, points)
-        img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
-        
-        for s, p in zip(decoded_info, points):
-            img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
-        
-        return points, decoded_info, img
-    
-    return [], (), image
+	if retval:
+
+		ret, decoded_info, _ = instance.decodeMulti(image, points)
+
+		if len(image.shape) == 2 or image.shape[2] == 1:
+			img = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+		else:
+			img = image.copy()
+				  
+		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0), 2)
+		for s, p in zip(decoded_info, points):
+			img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+		
+		return points, decoded_info, img
+	
+	return [], (), image
 
 
 __coco_classes_list = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"]
