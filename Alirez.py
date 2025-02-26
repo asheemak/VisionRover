@@ -564,10 +564,15 @@ def scanBarcode(image):
 
 	if retval:
 		ret, decoded_info, _ = instance.decodeMulti(image, points)
-		img = cv2.polylines(image.copy(), points.astype(int), True, (0, 255, 0), 2)
-          
+
+		if len(image.shape) == 2 or image.shape[2] == 1:
+			img = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+		else:
+			img = image.copy()
+			
+		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0), 2)
 		for s, p in zip(decoded_info, points):
-			img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+				img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
 		
 		return points, decoded_info, img
 	
