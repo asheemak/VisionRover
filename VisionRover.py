@@ -873,3 +873,62 @@ def scanQRCode(image):
         return points, decoded_info, img
     
     return [], (), image
+
+
+__coco_classes_list = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed", "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush"]
+__coco_classes_label_map = {class_name:i  for i, class_name in enumerate(__coco_classes_list)}
+
+def yolo11(yolo_session, image, confidence_threshold=0.5, score_threshold=0.5, nms_threshold=0.5, select_classes=None):
+
+    selected_classes_ids = set(__coco_classes_label_map[class_name] for class_name in select_classes) if select_classes else None
+
+    # Preprocess image and run inference
+    blob = cv2.dnn.blobFromImage(image, 1/255, (640, 640), swapRB=False, crop=False)
+
+    input_name = yolo_session.get_inputs()[0].name
+    outputs = yolo_session.run(None, {input_name: blob})
+    detections = outputs[0].T
+
+    classes_ids = []
+    confidences = []
+    boxes = []
+    rows = detections.shape[0]
+
+    img_width, img_height = image.shape[1], image.shape[0]
+    x_scale = img_width / 640
+    y_scale = img_height / 640
+
+    for i in range(rows):
+        row = detections[i]
+        classes_score = row[4:]
+        (_, maxVal, _, ind) = cv2.minMaxLoc(classes_score)
+        if classes_score[ind[1]] > confidence_threshold:
+            class_id = ind[1]
+            if selected_classes_ids is None or class_id in selected_classes_ids:
+                classes_ids.append(__coco_classes_list[class_id])
+                confidences.append(float(classes_score[class_id][0]))
+                cx, cy, w, h = row[:4].flatten()
+                x1 = int((cx - w / 2) * x_scale)
+                y1 = int((cy - h / 2) * y_scale)
+                width = int(w * x_scale)
+                height = int(h * y_scale)
+                boxes.append([x1, y1, width, height])
+
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
+    boxes = [boxes[i] for i in indices.flatten()]
+    confidences = [confidences[i] for i in indices.flatten()]
+    classes_ids = [classes_ids[i] for i in indices.flatten()]
+
+    # Draw detections on the image
+    output_image = image.copy()
+
+    for i in range(len(boxes)):
+        x, y, w, h = boxes[i]
+        label = classes_ids[i]
+        conf = confidences[i]
+        text = f"{label} {conf:.2f}"
+
+        cv2.rectangle(output_image, (x, y), (x + w, y + h), (255, 0, 255), 2)
+        cv2.putText(output_image, text, (x, y - 2), cv2.FONT_HERSHEY_COMPLEX, 0.9, (255, 0, 0), 2)
+
+    return output_image, classes_ids, boxes, confidences
