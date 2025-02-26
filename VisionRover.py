@@ -926,9 +926,11 @@ def yolo11(yolo_session, image, confidence_threshold=0.5, score_threshold=0.5, n
                 boxes.append([x1, y1, width, height])
 
     indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
-    boxes = [boxes[i] for i in indices.flatten()]
-    confidences = [confidences[i] for i in indices.flatten()]
-    classes_ids = [classes_ids[i] for i in indices.flatten()]
+    if len(indices) > 0:
+        indices = indices.flatten()
+        boxes = [boxes[i] for i in indices.flatten()]
+        confidences = [confidences[i] for i in indices.flatten()]
+        classes_ids = [classes_ids[i] for i in indices.flatten()]
 
     # Draw detections on the image
     output_image = image.copy()
