@@ -502,3 +502,23 @@ def gLCM(image, d, angle):
         glcm /= total
         
     return glcm    
+
+def compute_homogeneity(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm / (1.0 + (i - j) ** 2))
+
+def gLCMDissimilarity(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm * np.abs(i - j))
+
+def gLCMCorrelation(glcm):
+    i, j = np.indices(glcm.shape)
+    mean_i = np.sum(i * glcm)
+    mean_j = np.sum(j * glcm)
+    std_i = np.sqrt(np.sum(((i - mean_i) ** 2) * glcm))
+    std_j = np.sqrt(np.sum(((j - mean_j) ** 2) * glcm))
+    return np.sum((i - mean_i) * (j - mean_j) * glcm) / (std_i * std_j)
+
+def gLCMContrast(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm * (i - j) ** 2)
