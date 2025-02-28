@@ -855,9 +855,9 @@ def scanBarcode(image):
 		else:
 			img = image.copy()
 			
-		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0), 2)
+		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0, 255), 2)
 		for s, p in zip(decoded_info, points):
-				img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+				img = cv2.putText(img, s, p[1].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0, 255), 1, cv2.LINE_AA)
 		
 		return points, decoded_info, img
 	
@@ -877,9 +877,9 @@ def scanQRCode(image):
 		else:
 			img = image.copy()
 				  
-		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0), 2)
+		img = cv2.polylines(img, points.astype(int), True, (0, 255, 0, 255), 2)
 		for s, p in zip(decoded_info, points):
-			img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 1, cv2.LINE_AA)
+			img = cv2.putText(img, s, p[0].astype(int), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0, 255), 1, cv2.LINE_AA)
 		
 		return points, decoded_info, img
 	
@@ -926,9 +926,11 @@ def yolo11(yolo_session, image, confidence_threshold=0.5, score_threshold=0.5, n
                 boxes.append([x1, y1, width, height])
 
     indices = cv2.dnn.NMSBoxes(boxes, confidences, score_threshold, nms_threshold)
-    boxes = [boxes[i] for i in indices.flatten()]
-    confidences = [confidences[i] for i in indices.flatten()]
-    classes_ids = [classes_ids[i] for i in indices.flatten()]
+    if len(indices) > 0:
+        indices = indices.flatten()
+        boxes = [boxes[i] for i in indices.flatten()]
+        confidences = [confidences[i] for i in indices.flatten()]
+        classes_ids = [classes_ids[i] for i in indices.flatten()]
 
     # Draw detections on the image
     output_image = image.copy()
