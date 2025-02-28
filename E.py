@@ -522,3 +522,82 @@ def gLCMCorrelation(glcm):
 def gLCMContrast(glcm):
     i, j = np.indices(glcm.shape)
     return np.sum(glcm * (i - j) ** 2)
+
+def magnitudeFeatures(f_transform):
+
+    # Shift zero frequency component to the center
+    f_transform_centered = np.fft.fftshift(f_transform)
+
+    # Compute the magnitude spectrum
+    magn_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+
+    # Calculate individual features
+    mean_magn = np.mean(magnitude_spectrum)
+    var_magn = np.var(magnitude_spectrum)
+    max_magn = np.max(magnitude_spectrum)
+    sum_magn = np.sum(magnitude_spectrum)
+
+    return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
+
+def furierEnergyFeatures(f_transform):
+    f_transform_centered = np.fft.fftshift(f_transform)
+    magnitude_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+    power_spect = np.abs(magnitude_spectrum) ** 2
+    mean_pow = np.mean(power_spect)
+    variance_pow = np.var(power_spect)
+    max_pow = np.max(power_spect)
+    sum_pow = np.sum(power_spect)
+    height, width = power_spect.shape
+    low_freq_band = power_spect[:height // 4, :width // 4]
+    mid_freq_band = power_spect[height // 4:3 * height // 4, width // 4:3 * width // 4]
+    high_freq_band = power_spect[3 * height // 4:, 3 * width // 4:]
+    energyL = np.sum(low_freq_band)
+    energyM = np.sum(mid_freq_band)
+    energyH = np.sum(high_freq_band)
+
+
+
+    return (mean_pow, variance_pow, max_pow, sum_pow, 
+            energyL, energyM, energyH, 
+            power_spect)    
+
+
+def LBP(image):
+    height, width = image.shape
+    lbp = np.zeros((height, width), dtype=np.uint8)
+
+    
+    cond = (image[:-1, :-1] >= image[1:, 1:])
+    lbp[1:, 1:] += 128 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, :] >= image[1:, :])
+    lbp[1:, :] += 64 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, 1:] >= image[1:, :width-1])
+    lbp[1:, :width-1] += 32 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, 1:] >= image[:, :width-1])
+    lbp[:, :width-1] += 16 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, 1:] >= image[:-1, :-1])
+    lbp[:-1, :-1] += 8 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :] >= image[:-1, :])
+    lbp[:-1, :] += 4 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :-1] >= image[:-1, 1:])
+    lbp[:-1, 1:] += 2 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, :-1] >= image[:, 1:])
+    lbp[:, 1:] += 1 * cond.astype(np.uint8)
+
+    return lbp
