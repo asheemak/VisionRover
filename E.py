@@ -601,3 +601,47 @@ def LBP(image):
     lbp[:, 1:] += 1 * cond.astype(np.uint8)
 
     return lbp
+
+
+def grabcut(input_image, mode, rect, mask, iter):
+
+    # Initialize the mask and models
+    grabcut_mask = np.zeros(input_image.shape[:2], np.uint8)
+    bgdModel = np.zeros((1, 65), np.float64)
+    fgdModel = np.zeros((1, 65), np.float64)
+
+    # Handle modes
+    if mode in ['RECT', 'MASK', 'MASK+RECT', 'EVAL']:
+        if mask is None and mode in ['MASK', 'MASK+RECT']:
+            raise ValueError("Mask must be provided for MASK or MASK+RECT mode")
+
+        if mask is not None:
+            grabcut_mask[mask == 1] = cv2.GC_FGD  # Sure foreground
+            grabcut_mask[mask == 3] = cv2.GC_PR_FGD  # Probable foreground
+            grabcut_mask[mask == 0] = cv2.GC_BGD  # Sure background
+            grabcut_mask[mask == 2] = cv2.GC_PR_BGD  # Probable background
+
+    if mode == 'RECT':
+        if rect is None:
+            raise ValueError("Rectangle coordinates must be provided for RECT mode")
+        cv2.grabCut(input_image, grabcut_mask, rect, bgdModel, fgdModel, iter, cv2.GC_INIT_WITH_RECT)
+
+    elif mode == 'MASK':
+        cv2.grabCut(input_image, grabcut_mask, None, bgdModel, fgdModel, iter, cv2.GC_INIT_WITH_MASK)
+
+    elif mode == 'MASK+RECT':
+        if rect is None:
+            raise ValueError("Rectangle coordinates must be provided for MASK+RECT mode")
+        cv2.grabCut(input_image, grabcut_mask, rect, bgdModel, fgdModel, iter, cv2.GC_INIT_WITH_MASK + cv2.GC_INIT_WITH_RECT)
+
+    elif mode == 'EVAL':
+        cv2.grabCut(input_image, grabcut_mask, None, bgdModel, fgdModel, iter, cv2.GC_EVAL)
+
+    else:
+        raise ValueError("Invalid mode selected. Choose from 'RECT', 'MASK', 'MASK+RECT', 'EVAL'.")
+
+    _, mask_image = cv2.threshold(grabcut_mask, 2, 255, cv2.THRESH_BINARY)
+    mask_expanded = cv2.merge((mask_thresh, mask_thresh, mask_thresh))
+    maskedImage = cv2.bitwise_and(input_image, mask_expanded)
+
+    return maskedImage,mask_image  
