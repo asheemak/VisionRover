@@ -376,22 +376,47 @@ def evaluateModel(model, features, labels):
 
 
 
-def SVM(C=1.0, kernelType=cv2.ml.SVM_LINEAR, degree=0, gamma=0, classWeights=None):
+def SVM(modelType=0, type=cv2.ml.SVM_C_SVC, kernelType=cv2.ml.SVM_RBF, classWeights=None, C=1, coef=0, degree=1, gamma=1, nu=0.1, p=0.1):
   
-    svm_model = cv2.ml.SVM_create()
+	svm_model = cv2.ml.SVM_create()
 
-    # Set the parameters
-    svm_model.setC(C)
-    svm_model.setKernel(kernelType)
-    svm_model.setDegree(degree)
-    svm_model.setGamma(gamma)
-    svm_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
-    svm_model.setType(cv2.ml.SVM_C_SVC)
-    
-    if classWeights is not None:
-        svm_model.setClassWeights(classWeights)
+	if modelType == 0: # Classfiers
+		if type not in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
+			raise ValueError("This type is not related to Classification.")
+		
+	elif modelType == 1: # Regresors		
+		if type not in [cv2.ml.SVM_NU_SVR, cv2.ml.SVM_EPS_SVR]:
+			raise ValueError("This type is not related to Regression.")
 
-    return svm_model
+	svm_model.setType(type)
+	svm_model.setKernel(kernelType)
+	
+	if type == cv2.ml.SVM_C_SVC:
+		if classWeights is not None:
+			svm_model.setClassWeights(classWeights)
+		
+	if type in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_EPS_SVR, cv2.ml.SVM_NU_SVR]:
+		svm_model.setC(C)
+
+	if type in [cv2.ml.SVM_NU_SVR, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
+		svm_model.setNu(nu)
+
+	elif type == cv2.ml.SVM_EPS_SVR:
+		svm_model.setP(p)
+
+	if kernelType in [cv2.ml.SVM_POLY, cv2.ml.SVM_SIGMOID]:
+		svm_model.setCoef0(coef)
+
+	if kernelType == cv2.ml.SVM_POLY:
+		svm_model.setDegree(degree)
+
+	if kernelType in [cv2.ml.SVM_POLY, cv2.ml.SVM_SIGMOID, cv2.ml.SVM_RBF, cv2.ml.SVM_CHI2]:
+		svm_model.setGamma(gamma)
+	
+	svm_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 1000, 1e-6))
+     
+	return svm_model
+
 
 
 def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
