@@ -469,7 +469,7 @@ def gLCM(image, d, angle):
     max_gray_level = image.max() + 1
     rows, cols = image.shape
     glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
-    
+    distance = d
     # Compute the pixel offset for the given distance and angle.
     dx, dy = int(np.cos(angle) * distance), int(np.sin(angle) * distance)
     
@@ -533,10 +533,10 @@ def magnitudeFeatures(f_transform):
                                        f_transform_centered[:, :, 1])
 
     # Calculate individual features
-    mean_magn = np.mean(magnitude_spectrum)
-    var_magn = np.var(magnitude_spectrum)
-    max_magn = np.max(magnitude_spectrum)
-    sum_magn = np.sum(magnitude_spectrum)
+    mean_magn = np.mean(magn_spectrum)
+    var_magn = np.var(magn_spectrum)
+    max_magn = np.max(magn_spectrum)
+    sum_magn = np.sum(magn_spectrum)
 
     return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
 
@@ -641,7 +641,7 @@ def grabcut(input_image, mode, rect, mask, iter):
         raise ValueError("Invalid mode selected. Choose from 'RECT', 'MASK', 'MASK+RECT', 'EVAL'.")
 
     _, mask_image = cv2.threshold(grabcut_mask, 2, 255, cv2.THRESH_BINARY)
-    mask_expanded = cv2.merge((mask_thresh, mask_thresh, mask_thresh))
+    mask_expanded = cv2.merge((mask_image, mask_image, mask_image))
     maskedImage = cv2.bitwise_and(input_image, mask_expanded)
 
     return maskedImage,mask_image  
@@ -837,3 +837,23 @@ def imageIntensityVariance(image, mask=None):
             return varianceIntensity
     else:
         raise ValueError('image should be gray (1ch).')
+    
+
+def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
+	
+	if modelType == 0: # Classifier	
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
+			raise ValueError("Your model is a Regressor and you can not train it as classifier.")
+		
+		yTrain = np.array(yTrain, dtype=np.int32)
+
+	elif modelType == 1: # Regressor
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_NU_SVR, cv2.ml.SVM_EPS_SVR]:
+			raise ValueError("Your model is a Classifier and you can not train it as regressor.")
+		
+		yTrain = np.array(yTrain, dtype=np.float32)
+
+
+	model.train(XTrain, sampleType, yTrain)
+	
+	return model    
