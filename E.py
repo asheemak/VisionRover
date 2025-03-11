@@ -664,22 +664,30 @@ def bfMatcher(descriptors1, descriptors2, method , k , normType):
 
 
 
-def imageIntensityEntropy(image, mask):
+
+
+def imageIntensityEntropy(image, mask=None):
+
+    def entropy(values):
+        if values.size == 0:
+            return 0  # Avoid log(0) issues
+
+        hist, _ = np.histogram(values, bins=256, range=(0, 256), density=True)
+        hist = hist[hist > 0]  # Remove zero probabilities
+        return -np.sum(hist * np.log2(hist))
 
     if mask is not None:
-        # Normalize mask to binary
-        mask = (mask > 0).astype(np.uint8)
+        mask = (mask > 0).astype(np.uint8)  
         
-        # Apply mask to the image
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
         entropyIntensity = entropy(masked_values)
         return entropyIntensity
     else:
-        # Calculate statistics globally
         masked_values = image.flatten()
         entropyIntensity = entropy(masked_values)
         return entropyIntensity
+
 
 def imageIntensityKurtosis(image, mask=None):
 
