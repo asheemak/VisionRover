@@ -839,7 +839,7 @@ def imageIntensityVariance(image, mask=None):
         raise ValueError('image should be gray (1ch).')
     
 
-def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
+def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):#written by ALi
 	
 	if modelType == 0: # Classifier	
 		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
@@ -856,4 +856,34 @@ def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
 
 	model.train(XTrain, sampleType, yTrain)
 	
-	return model    
+	return model
+
+def evaluateClassificationModel(model, features, labels): #written by ALi
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+
+    if labels.flatten().shape[0] == features.shape[0]:
+        if model.getVarCount() != features.shape[1]:
+            raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+    
+    elif labels.flatten().shape[0] == features.shape[1]:
+        if model.getVarCount() != features.shape[0]:
+            raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+        
+        features = features.T
+        
+    else:
+        raise ValueError("Each sample must have a corresponding label")  
+    
+    _, preds = model.predict(features)
+
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+    
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[int(true_label), int(pred_label)] += 1
+
+    return accuracy, confusion_mx    
