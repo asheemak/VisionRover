@@ -731,17 +731,6 @@ def splitData(features, labels, testRatio, shuffle=True):
     return x_train, x_test, y_train, y_test
 
 
-def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
-    XTrain = XTrain.astype(np.float32)
-    yTrain = yTrain.astype(np.int32)
-
-    if (sampleType == cv2.ml.ROW_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[0]) or (sampleType == cv2.ml.COL_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[1]):
-        raise ValueError("Each sample must have a corresponding label")    
-
-    model.train(XTrain, sampleType, yTrain)
-    return model
-
-
 
 def predict(model, features):
     features = np.array(features, dtype=np.float32)
@@ -945,3 +934,292 @@ def yolo11(yolo_session, image, confidence_threshold=0.5, score_threshold=0.5, n
         cv2.putText(output_image, text, (x, y - 2), cv2.FONT_HERSHEY_COMPLEX, 0.9, (255, 0, 0), 2)
 
     return output_image, classes_ids, boxes, confidences
+
+
+def gLCM(image, d, angle):
+    max_gray_level = image.max() + 1
+    rows, cols = image.shape
+    glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
+    distance = d
+    # Compute the pixel offset for the given distance and angle.
+    dx, dy = int(np.cos(angle) * distance), int(np.sin(angle) * distance)
+    
+    # Compute shifted indices.
+    row_indices, col_indices = np.indices((rows, cols))
+    shifted_row = row_indices + dy
+    shifted_col = col_indices + dx
+    
+    # Create a mask for valid indices.
+    valid = (
+        (shifted_row >= 0) & (shifted_row < rows) &
+        (shifted_col >= 0) & (shifted_col < cols)
+    )
+    
+    # Select current and neighbor pixels.
+    current_pixels = image[valid]
+    neighbor_pixels = image[shifted_row[valid], shifted_col[valid]]
+    
+    # Compute the 2D histogram.
+    glcm, _, _ = np.histogram2d(
+        current_pixels,
+        neighbor_pixels,
+        bins=[max_gray_level, max_gray_level],
+        range=[[0, max_gray_level], [0, max_gray_level]]
+    )
+    
+    # Normalize the GLCM.
+    total = glcm.sum()
+    if total > 0:
+        glcm /= total
+        
+    return glcm    
+
+def gLCMHomogeneity(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm / (1.0 + (i - j) ** 2))
+
+def gLCMDissimilarity(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm * np.abs(i - j))
+
+def gLCMCorrelation(glcm):
+    i, j = np.indices(glcm.shape)
+    mean_i = np.sum(i * glcm)
+    mean_j = np.sum(j * glcm)
+    std_i = np.sqrt(np.sum(((i - mean_i) ** 2) * glcm))
+    std_j = np.sqrt(np.sum(((j - mean_j) ** 2) * glcm))
+    return np.sum((i - mean_i) * (j - mean_j) * glcm) / (std_i * std_j)
+
+def gLCMContrast(glcm):
+    i, j = np.indices(glcm.shape)
+    return np.sum(glcm * (i - j) ** 2)
+
+
+
+
+def imageIntensityEntropy(image, mask=None):
+
+    def entropy(values):
+        if values.size == 0:
+            return 0  # Avoid log(0) issues
+
+        hist, _ = np.histogram(values, bins=256, range=(0, 256), density=True)
+        hist = hist[hist > 0]  # Remove zero probabilities
+        return -np.sum(hist * np.log2(hist))
+
+    if mask is not None:
+        mask = (mask > 0).astype(np.uint8)  
+        
+        masked_image = cv2.bitwise_and(image, image, mask=mask)
+        masked_values = masked_image[mask == 1].flatten()
+        entropyIntensity = entropy(masked_values)
+        return entropyIntensity
+    else:
+        masked_values = image.flatten()
+        entropyIntensity = entropy(masked_values)
+        return entropyIntensity
+
+def imageIntensityKurtosis(image, mask=None):
+    def kurtosis_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 4) / (sigma ** 4)
+    
+    if mask is not None:
+        mask = (mask > 0).astype(np.uint8)
+        masked_image = cv2.bitwise_and(image, image, mask=mask)
+        masked_values = masked_image[mask == 1].flatten()
+        return kurtosis_calc(masked_values)
+    else:
+        values = image.flatten()
+        return kurtosis_calc(values)
+    
+def imageIntensityMean(image, mask=None):
+    if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
+        if mask is not None:
+            # Normalize mask to binary
+            mask = (mask > 0).astype(np.uint8)
+            
+            # Apply mask to the image
+            masked_image = cv2.bitwise_and(image, image, mask=mask)
+            masked_values = masked_image[mask == 1].flatten()
+            meanIntensity = np.mean(masked_values)
+            return meanIntensity
+        else:
+            # Calculate statistics globally
+            masked_values = image.flatten()
+            meanIntensity = np.mean(masked_values)
+            return meanIntensity
+    else:
+        raise ValueError('image should be gray (1ch).')
+    
+
+def imageIntensityMedian(image, mask=None):
+    if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
+        if mask is not None:
+            # Normalize mask to binary
+            mask = (mask > 0).astype(np.uint8)
+            
+            # Apply mask to the image
+            masked_image = cv2.bitwise_and(image, image, mask=mask)
+            masked_values = masked_image[mask == 1].flatten()
+            medianIntensity = np.median(masked_values)
+            return medianIntensity
+        else:
+            # Calculate statistics globally
+            masked_values = image.flatten()
+            medianIntensity = np.median(masked_values)
+            return medianIntensity
+    else:
+        raise ValueError('image should be gray (1ch).')
+    
+
+
+def imageIntensitySkewness(image, mask=None):
+    def skew_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 3) / (sigma ** 3)
+    
+    if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
+        if mask is not None:
+            mask = (mask > 0).astype(np.uint8)
+            masked_image = cv2.bitwise_and(image, image, mask=mask)
+            masked_values = masked_image[mask == 1].flatten()
+            return skew_calc(masked_values)
+        else:
+            masked_values = image.flatten()
+            return skew_calc(masked_values)
+    else:
+        raise ValueError('image should be gray (1ch).')
+    
+def imageIntensityStDev(image, mask=None):
+    if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
+        if mask is not None:
+            # Normalize mask to binary
+            mask = (mask > 0).astype(np.uint8)
+            
+            # Apply mask to the image
+            masked_image = cv2.bitwise_and(image, image, mask=mask)
+            masked_values = masked_image[mask == 1].flatten()
+            stdevIntensity = np.std(masked_values)
+            return stdevIntensity
+        else:
+            # Calculate statistics globally
+            masked_values = image.flatten()
+            stdevIntensity = np.std(masked_values)
+            return stdevIntensity
+    else:
+        raise ValueError('image should be gray (1ch).')
+
+
+
+def imageIntensityVariance(image, mask=None):
+    if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
+        if mask is not None:
+            # Normalize mask to binary
+            mask = (mask > 0).astype(np.uint8)
+            
+            # Apply mask to the image
+            masked_image = cv2.bitwise_and(image, image, mask=mask)
+            masked_values = masked_image[mask == 1].flatten()
+            varianceIntensity = np.var(masked_values)
+            return varianceIntensity
+        else:
+            # Calculate statistics globally
+            masked_values = image.flatten()
+            varianceIntensity = np.var(masked_values)
+            return varianceIntensity
+    else:
+        raise ValueError('image should be gray (1ch).')
+    
+def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):#written by ALi
+	
+	if modelType == 0: # Classifier	
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
+			raise ValueError("Your model is a Regressor and you can not train it as classifier.")
+		
+		yTrain = np.array(yTrain, dtype=np.int32)
+
+	elif modelType == 1: # Regressor
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_NU_SVR, cv2.ml.SVM_EPS_SVR]:
+			raise ValueError("Your model is a Classifier and you can not train it as regressor.")
+		
+		yTrain = np.array(yTrain, dtype=np.float32)
+
+
+	model.train(XTrain, sampleType, yTrain)
+	
+	return model
+
+def evaluateClassificationModel(model, features, labels): #written by ALi
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+
+    if labels.flatten().shape[0] == features.shape[0]:
+        if model.getVarCount() != features.shape[1]:
+            raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+    
+    elif labels.flatten().shape[0] == features.shape[1]:
+        if model.getVarCount() != features.shape[0]:
+            raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+        
+        features = features.T
+        
+    else:
+        raise ValueError("Each sample must have a corresponding label")  
+    
+    _, preds = model.predict(features)
+
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+    
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[int(true_label), int(pred_label)] += 1
+
+    return accuracy, confusion_mx    
+
+def evaluateRegressionModel(model, features, labels):#written by ALi
+	features = np.array(features, dtype=np.float32)
+	labels = np.array(labels, dtype=np.float32)
+
+	if labels.flatten().shape[0] == features.shape[0]:
+		if model.getVarCount() != features.shape[1]:
+			raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+	
+	elif labels.flatten().shape[0] == features.shape[1]:
+		if model.getVarCount() != features.shape[0]:
+			raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+		
+		features = features.T
+		
+	else:
+		raise ValueError("Each sample must have a corresponding label")  
+	
+	_, Preds = model.predict(features)
+
+	labels = labels.flatten()
+	Preds = Preds.flatten()
+
+	mse = np.mean((Preds - labels) ** 2)              
+	mae = np.mean(np.abs(Preds - labels))                
+	rmse = np.sqrt(mse)                                 
+
+	ss_res = np.sum((labels - Preds) ** 2)
+	ss_tot = np.sum((labels - np.mean(labels)) ** 2)
+	r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else float('nan')
+
+	return mse, mae, rmse, r2

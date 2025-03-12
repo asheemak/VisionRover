@@ -469,7 +469,7 @@ def gLCM(image, d, angle):
     max_gray_level = image.max() + 1
     rows, cols = image.shape
     glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
-    
+    distance = d
     # Compute the pixel offset for the given distance and angle.
     dx, dy = int(np.cos(angle) * distance), int(np.sin(angle) * distance)
     
@@ -503,7 +503,7 @@ def gLCM(image, d, angle):
         
     return glcm    
 
-def compute_homogeneity(glcm):
+def gLCMHomogeneity(glcm):
     i, j = np.indices(glcm.shape)
     return np.sum(glcm / (1.0 + (i - j) ** 2))
 
@@ -533,10 +533,10 @@ def magnitudeFeatures(f_transform):
                                        f_transform_centered[:, :, 1])
 
     # Calculate individual features
-    mean_magn = np.mean(magnitude_spectrum)
-    var_magn = np.var(magnitude_spectrum)
-    max_magn = np.max(magnitude_spectrum)
-    sum_magn = np.sum(magnitude_spectrum)
+    mean_magn = np.mean(magn_spectrum)
+    var_magn = np.var(magn_spectrum)
+    max_magn = np.max(magn_spectrum)
+    sum_magn = np.sum(magn_spectrum)
 
     return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
 
@@ -641,7 +641,7 @@ def grabcut(input_image, mode, rect, mask, iter):
         raise ValueError("Invalid mode selected. Choose from 'RECT', 'MASK', 'MASK+RECT', 'EVAL'.")
 
     _, mask_image = cv2.threshold(grabcut_mask, 2, 255, cv2.THRESH_BINARY)
-    mask_expanded = cv2.merge((mask_thresh, mask_thresh, mask_thresh))
+    mask_expanded = cv2.merge((mask_image, mask_image, mask_image))
     maskedImage = cv2.bitwise_and(input_image, mask_expanded)
 
     return maskedImage,mask_image  
@@ -664,40 +664,51 @@ def bfMatcher(descriptors1, descriptors2, method , k , normType):
 
 
 
-def imageIntensityEntropy(image, mask):
+
+
+def imageIntensityEntropy(image, mask=None):
+
+    def entropy(values):
+        if values.size == 0:
+            return 0  # Avoid log(0) issues
+
+        hist, _ = np.histogram(values, bins=256, range=(0, 256), density=True)
+        hist = hist[hist > 0]  # Remove zero probabilities
+        return -np.sum(hist * np.log2(hist))
 
     if mask is not None:
-        # Normalize mask to binary
-        mask = (mask > 0).astype(np.uint8)
+        mask = (mask > 0).astype(np.uint8)  
         
-        # Apply mask to the image
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
         entropyIntensity = entropy(masked_values)
         return entropyIntensity
     else:
-        # Calculate statistics globally
         masked_values = image.flatten()
         entropyIntensity = entropy(masked_values)
         return entropyIntensity
 
 def imageIntensityKurtosis(image, mask=None):
-
+    def kurtosis_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 4) / (sigma ** 4)
+    
     if mask is not None:
-        # Normalize mask to binary
         mask = (mask > 0).astype(np.uint8)
-        
-        # Apply mask to the image
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
-        kurtosisIntensity = kurtosis(masked_values)
-        return kurtosisIntensity
-    
+        return kurtosis_calc(masked_values)
     else:
-        # Calculate statistics globally
-        masked_values = image.flatten()
-        kurtosisIntensity = kurtosis(masked_values)
-        return kurtosisIntensity
+        values = image.flatten()
+        return kurtosis_calc(values)
+    
+
     
 def ImageIntensityMax(image, mask=None):
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
@@ -778,26 +789,31 @@ def ImageIntensityMin(image, mask=None):
     else:
         raise ValueError('image should be gray (1ch).')
 
+
+
 def imageIntensitySkewness(image, mask=None):
+    def skew_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 3) / (sigma ** 3)
+    
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
         if mask is not None:
-            # Normalize mask to binary
             mask = (mask > 0).astype(np.uint8)
-            
-            # Apply mask to the image
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
-            skewnessIntensity = skew(masked_values)
-            return skewnessIntensity
+            return skew_calc(masked_values)
         else:
-            # Calculate statistics globally
             masked_values = image.flatten()
-            skewnessIntensity = skew(masked_values)
-            return skewnessIntensity
+            return skew_calc(masked_values)
     else:
         raise ValueError('image should be gray (1ch).')
-
-
+    
 def imageIntensityStDev(image, mask=None):
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
         if mask is not None:
@@ -837,3 +853,85 @@ def imageIntensityVariance(image, mask=None):
             return varianceIntensity
     else:
         raise ValueError('image should be gray (1ch).')
+    
+
+def trainModel(modelType, model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):#written by ALi
+	
+	if modelType == 0: # Classifier	
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_C_SVC, cv2.ml.SVM_NU_SVC, cv2.ml.SVM_ONE_CLASS]:
+			raise ValueError("Your model is a Regressor and you can not train it as classifier.")
+		
+		yTrain = np.array(yTrain, dtype=np.int32)
+
+	elif modelType == 1: # Regressor
+		if type(model) == cv2.ml.SVM and model.getType() not in [cv2.ml.SVM_NU_SVR, cv2.ml.SVM_EPS_SVR]:
+			raise ValueError("Your model is a Classifier and you can not train it as regressor.")
+		
+		yTrain = np.array(yTrain, dtype=np.float32)
+
+
+	model.train(XTrain, sampleType, yTrain)
+	
+	return model
+
+def evaluateClassificationModel(model, features, labels): #written by ALi
+    features = np.array(features, dtype=np.float32)
+    labels = np.array(labels, dtype=np.int32)
+
+    if labels.flatten().shape[0] == features.shape[0]:
+        if model.getVarCount() != features.shape[1]:
+            raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+    
+    elif labels.flatten().shape[0] == features.shape[1]:
+        if model.getVarCount() != features.shape[0]:
+            raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+        
+        features = features.T
+        
+    else:
+        raise ValueError("Each sample must have a corresponding label")  
+    
+    _, preds = model.predict(features)
+
+    labels = labels.flatten()
+    preds = preds.flatten()
+    accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
+    num_classes = len(np.unique(labels))
+    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+    
+    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
+        confusion_mx[int(true_label), int(pred_label)] += 1
+
+    return accuracy, confusion_mx    
+
+def evaluateRegressionModel(model, features, labels):#written by ALi
+	features = np.array(features, dtype=np.float32)
+	labels = np.array(labels, dtype=np.float32)
+
+	if labels.flatten().shape[0] == features.shape[0]:
+		if model.getVarCount() != features.shape[1]:
+			raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+	
+	elif labels.flatten().shape[0] == features.shape[1]:
+		if model.getVarCount() != features.shape[0]:
+			raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+		
+		features = features.T
+		
+	else:
+		raise ValueError("Each sample must have a corresponding label")  
+	
+	_, Preds = model.predict(features)
+
+	labels = labels.flatten()
+	Preds = Preds.flatten()
+
+	mse = np.mean((Preds - labels) ** 2)              
+	mae = np.mean(np.abs(Preds - labels))                
+	rmse = np.sqrt(mse)                                 
+
+	ss_res = np.sum((labels - Preds) ** 2)
+	ss_tot = np.sum((labels - np.mean(labels)) ** 2)
+	r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else float('nan')
+
+	return mse, mae, rmse, r2
