@@ -726,3 +726,44 @@ def copyImage(image):
         return img
     else:
         raise ValueError("the input parameter is not an image")
+
+def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=10.0, minDistBetweenBlobs=10.0, minRepeatability=2, collectContours=False, filterByColor=False, blobColor=0, filterByArea=False, Area=(25.0, 5000.0), filterByCircularity=False, Circularity=(0.800000011920929, 3.4028234663852886e+38), filterByConvexity=False, Convexity=(0.949999988079071, 3.4028234663852886e+38), filterByInertia=False, InertiaRatio=(0.10000000149011612, 3.4028234663852886e+38)):
+    
+    params = cv2.SimpleBlobDetector_Params()
+    
+    params.minThreshold = threshold[0]
+    params.maxThreshold = threshold[1]
+    params.thresholdStep = thresholdStep
+    params.minDistBetweenBlobs = minDistBetweenBlobs
+    params.minRepeatability = minRepeatability
+    params.collectContours = collectContours
+
+    params.filterByColor = filterByColor
+    params.blobColor = blobColor
+
+    params.filterByArea = filterByArea
+    params.minArea = Area[0]
+    params.maxArea = Area[1]
+    
+    params.filterByCircularity = filterByCircularity
+    params.minCircularity = Circularity[0]
+    params.maxCircularity = Circularity[1]
+
+    params.filterByConvexity = filterByConvexity
+    params.minConvexity = Convexity[0]
+    params.maxConvexity = Convexity[1]
+
+    params.filterByInertia = filterByInertia
+    params.minInertiaRatio = InertiaRatio[0]
+    params.maxInertiaRatio = InertiaRatio[1]
+
+    detector = cv2.SimpleBlobDetector_create(params)
+
+    keypoints = detector.detect(image, mask=mask)
+
+    if collectContours:
+        contours = detector.getBlobContours()
+
+        return keypoints, contours
+        
+    return keypoints
