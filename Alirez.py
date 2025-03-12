@@ -727,7 +727,7 @@ def copyImage(image):
     else:
         raise ValueError("the input parameter is not an image")
 
-def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=10.0, minDistBetweenBlobs=10.0, minRepeatability=2, filterByColor=False, blobColor=0, filterByArea=False, Area=(25.0, 5000.0), filterByCircularity=False, Circularity=(0.800000011920929, 3.4028234663852886e+38), filterByConvexity=False, Convexity=(0.949999988079071, 3.4028234663852886e+38), filterByInertia=False, InertiaRatio=(0.10000000149011612, 3.4028234663852886e+38)):
+def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=10.0, minDistBetweenBlobs=10.0, minRepeatability=2, filterByColor=False, blobColor=0, filterByArea=False, area=(25.0, 5000.0), filterByCircularity=False, circularity=(0.800000011920929, 3.4028234663852886e+38), filterByConvexity=False, convexity=(0.949999988079071, 3.4028234663852886e+38), filterByInertia=False, inertiaRatio=(0.10000000149011612, 3.4028234663852886e+38)):
     
     params = cv2.SimpleBlobDetector_Params()
     
@@ -742,20 +742,20 @@ def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=
     params.blobColor = blobColor
 
     params.filterByArea = filterByArea
-    params.minArea = Area[0]
-    params.maxArea = Area[1]
+    params.minArea = area[0]
+    params.maxArea = area[1]
     
     params.filterByCircularity = filterByCircularity
-    params.minCircularity = Circularity[0]
-    params.maxCircularity = Circularity[1]
+    params.minCircularity = circularity[0]
+    params.maxCircularity = circularity[1]
 
     params.filterByConvexity = filterByConvexity
-    params.minConvexity = Convexity[0]
-    params.maxConvexity = Convexity[1]
+    params.minConvexity = convexity[0]
+    params.maxConvexity = convexity[1]
 
     params.filterByInertia = filterByInertia
-    params.minInertiaRatio = InertiaRatio[0]
-    params.maxInertiaRatio = InertiaRatio[1]
+    params.minInertiaRatio = inertiaRatio[0]
+    params.maxInertiaRatio = inertiaRatio[1]
 
     detector = cv2.SimpleBlobDetector_create(params)
 
