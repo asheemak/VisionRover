@@ -688,24 +688,27 @@ def imageIntensityEntropy(image, mask=None):
         entropyIntensity = entropy(masked_values)
         return entropyIntensity
 
-
 def imageIntensityKurtosis(image, mask=None):
-
+    def kurtosis_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 4) / (sigma ** 4)
+    
     if mask is not None:
-        # Normalize mask to binary
         mask = (mask > 0).astype(np.uint8)
-        
-        # Apply mask to the image
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
-        kurtosisIntensity = kurtosis(masked_values)
-        return kurtosisIntensity
-    
+        return kurtosis_calc(masked_values)
     else:
-        # Calculate statistics globally
-        masked_values = image.flatten()
-        kurtosisIntensity = kurtosis(masked_values)
-        return kurtosisIntensity
+        values = image.flatten()
+        return kurtosis_calc(values)
+    
+
     
 def ImageIntensityMax(image, mask=None):
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
@@ -786,26 +789,31 @@ def ImageIntensityMin(image, mask=None):
     else:
         raise ValueError('image should be gray (1ch).')
 
+
+
 def imageIntensitySkewness(image, mask=None):
+    def skew_calc(values):
+        if values.size == 0:
+            return 0
+        values = values.astype(np.float64)
+        mu = np.mean(values)
+        sigma = np.std(values)
+        if sigma == 0:
+            return 0
+        return np.mean((values - mu) ** 3) / (sigma ** 3)
+    
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
         if mask is not None:
-            # Normalize mask to binary
             mask = (mask > 0).astype(np.uint8)
-            
-            # Apply mask to the image
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
-            skewnessIntensity = skew(masked_values)
-            return skewnessIntensity
+            return skew_calc(masked_values)
         else:
-            # Calculate statistics globally
             masked_values = image.flatten()
-            skewnessIntensity = skew(masked_values)
-            return skewnessIntensity
+            return skew_calc(masked_values)
     else:
         raise ValueError('image should be gray (1ch).')
-
-
+    
 def imageIntensityStDev(image, mask=None):
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
         if mask is not None:
