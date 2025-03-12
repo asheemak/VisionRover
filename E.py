@@ -903,3 +903,35 @@ def evaluateClassificationModel(model, features, labels): #written by ALi
         confusion_mx[int(true_label), int(pred_label)] += 1
 
     return accuracy, confusion_mx    
+
+def evaluateRegressionModel(model, features, labels):#written by ALi
+	features = np.array(features, dtype=np.float32)
+	labels = np.array(labels, dtype=np.float32)
+
+	if labels.flatten().shape[0] == features.shape[0]:
+		if model.getVarCount() != features.shape[1]:
+			raise ValueError(f"Samples are row-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[1]} features.")
+	
+	elif labels.flatten().shape[0] == features.shape[1]:
+		if model.getVarCount() != features.shape[0]:
+			raise ValueError(f"Samples are column-wise but input data does not contain the required number of features. This model expects {model.getVarCount()} features, but the provided data contains only {features.shape[0]} features.")
+		
+		features = features.T
+		
+	else:
+		raise ValueError("Each sample must have a corresponding label")  
+	
+	_, Preds = model.predict(features)
+
+	labels = labels.flatten()
+	Preds = Preds.flatten()
+
+	mse = np.mean((Preds - labels) ** 2)              
+	mae = np.mean(np.abs(Preds - labels))                
+	rmse = np.sqrt(mse)                                 
+
+	ss_res = np.sum((labels - Preds) ** 2)
+	ss_tot = np.sum((labels - np.mean(labels)) ** 2)
+	r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else float('nan')
+
+	return mse, mae, rmse, r2
