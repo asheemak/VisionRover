@@ -503,7 +503,7 @@ def gLCM(image, d, angle):
         
     return glcm    
 
-def glcmHomogeneity(glcm):
+def gLCMHomogeneity(glcm):
     i, j = np.indices(glcm.shape)
     return np.sum(glcm / (1.0 + (i - j) ** 2))
 
