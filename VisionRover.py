@@ -731,17 +731,6 @@ def splitData(features, labels, testRatio, shuffle=True):
     return x_train, x_test, y_train, y_test
 
 
-def trainModel(model, XTrain, yTrain, sampleType=cv2.ml.ROW_SAMPLE):
-    XTrain = XTrain.astype(np.float32)
-    yTrain = yTrain.astype(np.int32)
-
-    if (sampleType == cv2.ml.ROW_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[0]) or (sampleType == cv2.ml.COL_SAMPLE and yTrain.flatten().shape[0] != XTrain.shape[1]):
-        raise ValueError("Each sample must have a corresponding label")    
-
-    model.train(XTrain, sampleType, yTrain)
-    return model
-
-
 
 def predict(model, features):
     features = np.array(features, dtype=np.float32)
