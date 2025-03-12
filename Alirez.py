@@ -727,7 +727,7 @@ def copyImage(image):
     else:
         raise ValueError("the input parameter is not an image")
 
-def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=10.0, minDistBetweenBlobs=10.0, minRepeatability=2, collectContours=False, filterByColor=False, blobColor=0, filterByArea=False, Area=(25.0, 5000.0), filterByCircularity=False, Circularity=(0.800000011920929, 3.4028234663852886e+38), filterByConvexity=False, Convexity=(0.949999988079071, 3.4028234663852886e+38), filterByInertia=False, InertiaRatio=(0.10000000149011612, 3.4028234663852886e+38)):
+def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=10.0, minDistBetweenBlobs=10.0, minRepeatability=2, filterByColor=False, blobColor=0, filterByArea=False, Area=(25.0, 5000.0), filterByCircularity=False, Circularity=(0.800000011920929, 3.4028234663852886e+38), filterByConvexity=False, Convexity=(0.949999988079071, 3.4028234663852886e+38), filterByInertia=False, InertiaRatio=(0.10000000149011612, 3.4028234663852886e+38)):
     
     params = cv2.SimpleBlobDetector_Params()
     
@@ -736,7 +736,7 @@ def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=
     params.thresholdStep = thresholdStep
     params.minDistBetweenBlobs = minDistBetweenBlobs
     params.minRepeatability = minRepeatability
-    params.collectContours = collectContours
+    params.collectContours = True
 
     params.filterByColor = filterByColor
     params.blobColor = blobColor
@@ -761,9 +761,6 @@ def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=
 
     keypoints = detector.detect(image, mask=mask)
 
-    if collectContours:
-        contours = detector.getBlobContours()
+    contours = detector.getBlobContours()
 
-        return keypoints, contours
-        
-    return keypoints
+    return keypoints, contours
