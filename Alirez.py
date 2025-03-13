@@ -764,3 +764,39 @@ def simpleBlobDetector(image, mask=None, threshold=(50.0, 220.0), thresholdStep=
     contours = detector.getBlobContours()
 
     return keypoints, contours
+
+
+def loadVideo(videoPath, colorConversion=-1):
+
+	imagePath = __normalizeFilePath(imagePath)
+	frames = []
+	cap = cv2.VideoCapture(videoPath)	
+	frame_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)    
+	success = True
+
+	while success:
+		success, frame = cap.read()
+		if success:   
+			if frame is None:
+				raise ValueError("Failed to load and decode frame")
+			
+			if len(frame.shape) > 2 and frame.shape[2] == 3: 
+				frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+			
+			elif len(frame.shape) > 2 and frame.shape[2] == 4: 
+				frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGBA)
+
+			if colorConversion != -1:
+				if len(frame.shape) == 2 or (len(frame.shape) == 3 and frame.shape[2] == 1):
+					if colorConversion not in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+						raise ValueError("This color convertion is not supported for 1ch image")
+				else:
+					if colorConversion in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+						raise ValueError(f"This color convertion is not supported for {frame.shape[2]}ch image")
+						
+				frame = cv2.cvtColor(frame, colorConversion)
+	
+			frames.append(frame)
+               
+	cap.release()
+	return int(frame_count), frames
