@@ -976,11 +976,11 @@ def gLCM(image, d, angle):
 
 def gLCMHomogeneity(glcm):
     i, j = np.indices(glcm.shape)
-    return np.sum(glcm / (1.0 + (i - j) ** 2))
+    return  float(np.sum(glcm / (1.0 + (i - j) ** 2)))
 
 def gLCMDissimilarity(glcm):
     i, j = np.indices(glcm.shape)
-    return np.sum(glcm * np.abs(i - j))
+    return  float(np.sum(glcm * np.abs(i - j)))
 
 def gLCMCorrelation(glcm):
     i, j = np.indices(glcm.shape)
@@ -988,11 +988,11 @@ def gLCMCorrelation(glcm):
     mean_j = np.sum(j * glcm)
     std_i = np.sqrt(np.sum(((i - mean_i) ** 2) * glcm))
     std_j = np.sqrt(np.sum(((j - mean_j) ** 2) * glcm))
-    return np.sum((i - mean_i) * (j - mean_j) * glcm) / (std_i * std_j)
+    return  float(np.sum((i - mean_i) * (j - mean_j) * glcm) / (std_i * std_j))
 
 def gLCMContrast(glcm):
     i, j = np.indices(glcm.shape)
-    return np.sum(glcm * (i - j) ** 2)
+    return  float(np.sum(glcm * (i - j) ** 2))
 
 
 
@@ -1013,11 +1013,11 @@ def imageIntensityEntropy(image, mask=None):
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
         entropyIntensity = entropy(masked_values)
-        return entropyIntensity
+        return  float(entropyIntensity)
     else:
         masked_values = image.flatten()
         entropyIntensity = entropy(masked_values)
-        return entropyIntensity
+        return  float(entropyIntensity)
 
 def imageIntensityKurtosis(image, mask=None):
     def kurtosis_calc(values):
@@ -1034,10 +1034,10 @@ def imageIntensityKurtosis(image, mask=None):
         mask = (mask > 0).astype(np.uint8)
         masked_image = cv2.bitwise_and(image, image, mask=mask)
         masked_values = masked_image[mask == 1].flatten()
-        return kurtosis_calc(masked_values)
+        return  float(kurtosis_calc(masked_values))
     else:
         values = image.flatten()
-        return kurtosis_calc(values)
+        return  float(kurtosis_calc(values))
     
 def imageIntensityMean(image, mask=None):
     if len(image.shape) == 2 or (len(image.shape) == 2 and image.shape[2] == 1):
@@ -1049,12 +1049,12 @@ def imageIntensityMean(image, mask=None):
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
             meanIntensity = np.mean(masked_values)
-            return meanIntensity
+            return  float(meanIntensity)
         else:
             # Calculate statistics globally
             masked_values = image.flatten()
             meanIntensity = np.mean(masked_values)
-            return meanIntensity
+            return  float(meanIntensity)
     else:
         raise ValueError('image should be gray (1ch).')
     
@@ -1069,12 +1069,12 @@ def imageIntensityMedian(image, mask=None):
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
             medianIntensity = np.median(masked_values)
-            return medianIntensity
+            return  float(medianIntensity)
         else:
             # Calculate statistics globally
             masked_values = image.flatten()
             medianIntensity = np.median(masked_values)
-            return medianIntensity
+            return  float(medianIntensity)
     else:
         raise ValueError('image should be gray (1ch).')
     
@@ -1096,10 +1096,10 @@ def imageIntensitySkewness(image, mask=None):
             mask = (mask > 0).astype(np.uint8)
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
-            return skew_calc(masked_values)
+            return  float(skew_calc(masked_values))
         else:
             masked_values = image.flatten()
-            return skew_calc(masked_values)
+            return  float(skew_calc(masked_values))
     else:
         raise ValueError('image should be gray (1ch).')
     
@@ -1113,12 +1113,12 @@ def imageIntensityStDev(image, mask=None):
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
             stdevIntensity = np.std(masked_values)
-            return stdevIntensity
+            return  float(stdevIntensity)
         else:
             # Calculate statistics globally
             masked_values = image.flatten()
             stdevIntensity = np.std(masked_values)
-            return stdevIntensity
+            return  float(stdevIntensity)
     else:
         raise ValueError('image should be gray (1ch).')
 
@@ -1134,12 +1134,12 @@ def imageIntensityVariance(image, mask=None):
             masked_image = cv2.bitwise_and(image, image, mask=mask)
             masked_values = masked_image[mask == 1].flatten()
             varianceIntensity = np.var(masked_values)
-            return varianceIntensity
+            return  float(varianceIntensity)
         else:
-            # Calculate statistics globally
+            #  Calculate statistics globally
             masked_values = image.flatten()
             varianceIntensity = np.var(masked_values)
-            return varianceIntensity
+            return  float(varianceIntensity)
     else:
         raise ValueError('image should be gray (1ch).')
     
