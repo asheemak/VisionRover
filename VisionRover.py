@@ -937,7 +937,7 @@ def yolo11(yolo_session, image, confidence_threshold=0.5, score_threshold=0.5, n
 
 
 def gLCM(image, d, angle):
-    max_gray_level = image.max() + 1
+    max_gray_level = image.max().item() + 1
     rows, cols = image.shape
     glcm = np.zeros((max_gray_level, max_gray_level), dtype=np.float64)
     distance = d
