@@ -1280,7 +1280,7 @@ def zscore(features):
     mean = mean.ravel()
     std = std.ravel()
     Mat = (features - mean) / (std + 1e-8)
-    return Mat, mean, std 
+    return Mat, mean.tolist(), std.tolist() 
 
 def normMinMax(features):
     features = np.asarray(features)
@@ -1298,4 +1298,4 @@ def normMinMax(features):
     
     # Perform min-max normalization: (x - min) / (max - min)
     mat = (features - min_vals) / ((max_vals - min_vals) + 1e-8)
-    return mat, min_vals, max_vals
+    return mat, min_vals.tolist(), max_vals.tolist()
