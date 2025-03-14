@@ -168,6 +168,7 @@ def loadVideo(videoPath, fps=1, colorConversion=-1):
     if fps < 1:
         raise ValueError(f"Invalid fps value ({fps}): fps must be a positive number greater than one.")
 
+    videoPath = __normalizeFilePath(videoPath)
     cap = cv2.VideoCapture(videoPath)
     original_fps = cap.get(cv2.CAP_PROP_FPS)
     if original_fps <= 0:
