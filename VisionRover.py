@@ -1271,3 +1271,31 @@ def evaluateRegressionModel(model, features, labels):#written by ALi
 	r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else float('nan')
 
 	return mse, mae, rmse, r2
+
+
+def zscore(features):
+    features = np.asarray(features)
+    reshaped = features.reshape(features.shape[0], 1, features.shape[1])
+    mean, std = cv2.meanStdDev(reshaped)
+    mean = mean.ravel()
+    std = std.ravel()
+    Mat = (features - mean) / (std + 1e-8)
+    return Mat, mean, std 
+
+def normMinMax(features):
+    features = np.asarray(features)
+    reshaped = features.reshape(features.shape[0], 1, features.shape[1])
+    channels = cv2.split(reshaped)
+    min_vals = []
+    max_vals = []
+    for ch in channels:
+        min_val, max_val, _, _ = cv2.minMaxLoc(ch)
+        min_vals.append(min_val)
+        max_vals.append(max_val)
+    
+    min_vals = np.array(min_vals)
+    max_vals = np.array(max_vals)
+    
+    # Perform min-max normalization: (x - min) / (max - min)
+    mat = (features - min_vals) / ((max_vals - min_vals) + 1e-8)
+    return mat, min_vals, max_vals
