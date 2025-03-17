@@ -419,7 +419,7 @@ def anovaFeatureRank(X, y):
     feature_ranks  = np.argsort(F)[::-1]
     return feature_ranks 
 
-def PCA(data, n_components):
+def pca(data, n_components):
 
     mean, eigenvectors = cv2.PCACompute(data, mean=None, maxComponents=n_components)
     transformed_data = cv2.PCAProject(data, mean, eigenvectors)
