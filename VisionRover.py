@@ -1381,3 +1381,11 @@ def pca(data, n_components):
     
     return transformed_data, mean, eigenvectors
 
+def concatH(input1: np.ndarray, input2: np.ndarray):
+    return np.hstack((input1, input2))
+
+def concatV(input1: np.ndarray, input2: np.ndarray):
+    return np.vstack((input1, input2))
+
+def transpose(input: np.ndarray):
+    return input.T
