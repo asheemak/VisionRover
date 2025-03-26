@@ -749,7 +749,7 @@ def splitData(features, labels, testRatio, shuffle=True):
                 labels = labels.flatten()
      
     features = np.array(features, dtype=np.float32)
-    labels = np.array(labels, dtype=np.int32)
+    labels = np.array(labels)
     
     if labels.flatten().shape[0] == features.shape[0]:
         indices = np.arange(features.shape[0])
@@ -1274,11 +1274,15 @@ def evaluateClassificationModel(model, features, labels): #written by ALi
     labels = labels.flatten()
     preds = preds.flatten()
     accuracy = np.mean((preds == labels).astype(np.float32)) * 100 
-    num_classes = len(np.unique(labels))
-    confusion_mx = np.zeros((num_classes, num_classes), dtype=np.int32)
+    all_labels = np.unique(np.concatenate((labels, preds)))
+    label_to_index = {label: idx for idx, label in enumerate(all_labels)}
     
-    for true_label, pred_label in zip(labels.flatten(), preds.flatten()):
-        confusion_mx[int(true_label), int(pred_label)] += 1
+    confusion_mx = np.zeros((len(all_labels), len(all_labels)), dtype=np.int32)
+    
+    for true_label, pred_label in zip(labels, preds):
+        i = label_to_index[true_label]
+        j = label_to_index[pred_label]
+        confusion_mx[i, j] += 1
 
     return accuracy, confusion_mx    
 

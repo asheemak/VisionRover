@@ -285,7 +285,7 @@ def splitData(features, labels, testRatio, shuffle=True):
 				labels = labels.flatten()
 	 
 	features = np.array(features, dtype=np.float32)
-	labels = np.array(labels, dtype=np.int32)
+	labels = np.array(labels)
 	
 	if labels.flatten().shape[0] == features.shape[0]:
 		indices = np.arange(features.shape[0])
