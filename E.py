@@ -426,10 +426,9 @@ def pca(data, n_components):
     
     return transformed_data, mean, eigenvectors
 
-def boost(weakCount=100, weightTrimRate=0.95, maxDepth=1):
-    useSurrogates=False
+def boost(boostType, weakCount, weightTrimRate, maxDepth, useSurrogates):
     model = cv2.ml.Boost_create()
-    model.setBoostType(cv2.ml.BOOST_DISCRETE)
+    model.setBoostType(boostType)
     model.setWeakCount(weakCount)
     model.setWeightTrimRate(weightTrimRate)
     model.setMaxDepth(maxDepth)
