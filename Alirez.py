@@ -813,7 +813,7 @@ def loadVideo(videoPath, startFrame=0, endFrame=1, numberOfFrames=2, colorConver
 	return frames
 
 
-def knn(modelType=0, k=10):
+def KNN(modelType=0, k=10):
 	knn_model = cv2.ml.KNearest_create()
 	
 	knn_model.setDefaultK(k)
