@@ -690,15 +690,6 @@ def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDivers
 
 
 
-def knn(k=5, isClassifier=True):
-	knn_model = cv2.ml.KNearest_create()
-
-	knn_model.setDefaultK(k)
-	knn_model.setIsClassifier(isClassifier)
-
-	return knn_model
-
-
 def emCluster(nClusters=2, covarianceMatrixType=cv2.ml.EM_COV_MAT_SPHERICAL, termCriteria=(cv2.TERM_CRITERIA_COUNT + cv2.TERM_CRITERIA_EPS, 100, 1e-6)):
 	em_model = cv2.ml.EM_create()
 
@@ -820,3 +811,18 @@ def loadVideo(videoPath, startFrame=0, endFrame=1, numberOfFrames=2, colorConver
 	cap.release()
 	
 	return frames
+
+
+def knn(modelType=0, k=10):
+	knn_model = cv2.ml.KNearest_create()
+	
+	knn_model.setDefaultK(k)
+	
+	if modelType == 0:
+		isClassifier = True
+	elif modelType == 1:
+		isClassifier = False
+		
+	knn_model.setIsClassifier(isClassifier)
+	knn_model.setAlgorithmType(cv2.ml.KNEAREST_BRUTE_FORCE)
+	return knn_model
