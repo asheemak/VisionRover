@@ -339,12 +339,12 @@ def fitLine(image, points, dist_type, param, reps, aeps,
 
     return image, vx, vy, x, y
 
-def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts):
+def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts,KMeansFlags):
 
     data = np.float32(image.reshape(-1, 1))
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, criteria_max_iter, criteria_eps)
-    flags=cv2.KMEANS_RANDOM_CENTERS
-    ret, labels, centers = cv2.kmeans(data, k, None, criteria, attempts, flags)
+    #flags=cv2.KMEANS_RANDOM_CENTERS
+    ret, labels, centers = cv2.kmeans(data, k, None, criteria, attempts, KMeansFlags)
     
     centers = np.uint8(centers)
     segmented_img = centers[labels.flatten()]
@@ -426,10 +426,9 @@ def pca(data, n_components):
     
     return transformed_data, mean, eigenvectors
 
-def boost(weakCount=100, weightTrimRate=0.95, maxDepth=1):
-    useSurrogates=False
+def boost(boostType, weakCount, weightTrimRate, maxDepth, useSurrogates):
     model = cv2.ml.Boost_create()
-    model.setBoostType(cv2.ml.BOOST_DISCRETE)
+    model.setBoostType(boostType)
     model.setWeakCount(weakCount)
     model.setWeightTrimRate(weightTrimRate)
     model.setMaxDepth(maxDepth)

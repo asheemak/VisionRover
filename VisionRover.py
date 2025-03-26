@@ -164,53 +164,60 @@ def loadDicom(file_path):
     except Exception as e:
         raise ValueError(f"Could not read DICOM file: {file_path}")
 
-def loadVideo(videoPath, fps=1, colorConversion=-1):
-    if fps < 1:
-        raise ValueError(f"Invalid fps value ({fps}): fps must be a positive number greater than one.")
+def loadVideo(videoPath, startFrame=0, endFrame=1, numberOfFrames=2, colorConversion=-1):
+	if numberOfFrames < 2:
+		raise ValueError("numberOfFrames must be at least 2.")
+	if endFrame <= startFrame:
+		raise ValueError("endFrame must be greater than startFrame.")
+	
+	videoPath = __normalizeFilePath(videoPath)
+	cap = cv2.VideoCapture(videoPath)
+	if not cap.isOpened():
+		raise ValueError("Unable to open video.")
+	
+	total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+	if endFrame >= total_frames:
+		cap.release()
+		raise ValueError(f"endFrame is greater than the max frame ({total_frames-1}) in the video.")
 
-    videoPath = __normalizeFilePath(videoPath)
-    cap = cv2.VideoCapture(videoPath)
-    original_fps = cap.get(cv2.CAP_PROP_FPS)
-    if original_fps <= 0:
-        cap.release()
-        raise ValueError("Unable to get FPS from video.")
-    
-    frame_interval = max(1, int(round(original_fps / fps)))
-    frames = []
-    frame_index = 0
+	available_frames = endFrame - startFrame + 1
+	if available_frames < numberOfFrames:
+		cap.release()
+		raise ValueError(f"Not enough frames between startFrame ({startFrame}) and endFrame ({endFrame}). Requested {numberOfFrames} frames, but only {available_frames} frames are available.")
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+	indices = np.linspace(startFrame, endFrame, numberOfFrames, dtype=int)
+	
+	frames = []
+	for idx in indices:
+		cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+		ret, frame = cap.read()
+		if not ret or frame is None:
+			cap.release()
+			raise ValueError(f"Failed to load and decode frame at index {idx}")
 
-        if frame_index % frame_interval == 0:
-            if frame is None:
-                cap.release()
-                raise ValueError("Failed to load and decode frame")
+		if len(frame.shape) > 2:
+			if frame.shape[2] == 3:
+				frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+			elif frame.shape[2] == 4:
+				frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGBA)
+		
+		if colorConversion != -1:
+			if (len(frame.shape) == 2 or (len(frame.shape) == 3 and frame.shape[2] == 1)):
+				if colorConversion not in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+					cap.release()
+					raise ValueError("This color conversion is not supported for 1-channel images")
+			else:
+				if colorConversion in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
+					cap.release()
+					raise ValueError(f"This color conversion is not supported for {frame.shape[2]}-channel images")
+				
+			frame = cv2.cvtColor(frame, colorConversion)
+		
+		frames.append(frame)
 
-            if len(frame.shape) > 2:
-                if frame.shape[2] == 3:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                elif frame.shape[2] == 4:
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2RGBA)
-
-            if colorConversion != -1:
-                if (len(frame.shape) == 2 or (len(frame.shape) == 3 and frame.shape[2] == 1)):
-                    if colorConversion not in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
-                        cap.release()
-                        raise ValueError("This color conversion is not supported for 1-channel images")
-                else:
-                    if colorConversion in [cv2.COLOR_GRAY2BGR, cv2.COLOR_GRAY2RGB, cv2.COLOR_GRAY2BGRA, cv2.COLOR_GRAY2RGBA]:
-                        cap.release()
-                        raise ValueError(f"This color conversion is not supported for {frame.shape[2]}-channel images")
-                frame = cv2.cvtColor(frame, colorConversion)
-            
-            frames.append(frame)
-        frame_index += 1
-
-    cap.release()
-    return len(frames), frames
+	cap.release()
+	
+	return frames
 	
 def onnx_model_loader(modelPath):
     import onnxruntime
