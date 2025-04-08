@@ -934,3 +934,19 @@ def evaluateRegressionModel(model, features, labels):#written by ALi
 	r2 = 1 - (ss_res / ss_tot) if ss_tot != 0 else float('nan')
 
 	return mse, mae, rmse, r2
+
+def mlp(layerSizes, activation, alpha, maxIter):
+
+    layer_sizes = np.array(eval(layerSizes), dtype=np.int32)
+    mlp = cv2.ml.ANN_MLP_create()
+    mlp.setLayerSizes(layer_sizes)
+
+    # Set activation function
+    mlp.setActivationFunction(eval(activation))
+    mlp.setTrainMethod(cv2.ml.ANN_MLP_BACKPROP)
+    mlp.setBackpropWeightScale(alpha)  # Equivalent to learning rate
+    mlp.setBackpropMomentumScale(0.0)  # Can be parameterized too
+
+    mlp.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, int(maxIter), 1e-6))
+
+    return mlp
