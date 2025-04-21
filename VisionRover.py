@@ -1405,10 +1405,10 @@ def transpose(src: np.ndarray):
 def bfMatcher(descriptors1, descriptors2, method , k , normType):
     bf = cv2.BFMatcher(normType=normType, crossCheck=False)
     
-    if method == 'match':
+    if method == 1: # "match" method
         matches = bf.match(descriptors1, descriptors2)
         matches = sorted(matches, key=lambda x: x.distance)
-    elif method == 'knn':
+    elif method == 2: # "knn"method
         matches = bf.knnMatch(descriptors1, descriptors2, k=k)
         matches = sorted(matches, key=lambda x: x[0].distance if len(x) > 0 else float('inf'))
 
