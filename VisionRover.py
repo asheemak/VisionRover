@@ -1400,3 +1400,112 @@ def concatV(src1: np.ndarray, src2: np.ndarray):
 
 def transpose(src: np.ndarray):
     return src.T
+
+
+def bfMatcher(descriptors1, descriptors2, method , k , normType):
+    bf = cv2.BFMatcher(normType=normType, crossCheck=False)
+    
+    if method == 'match':
+        matches = bf.match(descriptors1, descriptors2)
+        matches = sorted(matches, key=lambda x: x.distance)
+    elif method == 'knn':
+        matches = bf.knnMatch(descriptors1, descriptors2, k=k)
+        matches = sorted(matches, key=lambda x: x[0].distance if len(x) > 0 else float('inf'))
+
+    
+    return matches
+
+
+def mlp(layerSizes, activation, alpha, maxIter):
+
+    layer_sizes = np.array(layerSizes, dtype=np.int32)
+    mlp = cv2.ml.ANN_MLP_create()
+    mlp.setLayerSizes(layer_sizes)
+
+    # Set activation function
+    mlp.setActivationFunction(activation)
+    mlp.setTrainMethod(cv2.ml.ANN_MLP_BACKPROP)
+    mlp.setBackpropWeightScale(alpha)  # Equivalent to learning rate
+    mlp.setBackpropMomentumScale(0.0)  # Can be parameterized too
+
+    mlp.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, int(maxIter), 1e-6))
+
+    return mlp
+
+
+
+def orbDetectCompute(image, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, firstLevel=0, WTA_K=2, patchSize=31):
+    orb = cv2.ORB_create(
+        nfeatures=nfeatures,
+        scaleFactor=scaleFactor,
+        nlevels=nlevels,
+        edgeThreshold=edgeThreshold,
+        firstLevel=firstLevel,
+        WTA_K=WTA_K,
+        scoreType=cv2.ORB_HARRIS_SCORE,
+        patchSize=patchSize
+    )
+    # Detect keypoints and compute descriptors
+    keypoints, descriptors = orb.detectAndCompute(image, None)
+    return keypoints, descriptors
+
+
+
+def siftDetectCompute(image, nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma):
+
+    sift = cv2.SIFT_create(
+        nfeatures=nfeatures,
+        nOctaveLayers=nOctaveLayers,
+        contrastThreshold=contrastThreshold,
+        edgeThreshold=edgeThreshold,
+        sigma=sigma
+    )
+
+    keypoints, descriptors = sift.detectAndCompute(image, None)
+    return keypoints, descriptors
+
+
+
+def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts,KMeansFlags):
+
+    data = np.float32(image.reshape(-1, 1))
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, criteria_max_iter, criteria_eps)
+    #flags=cv2.KMEANS_RANDOM_CENTERS
+    ret, labels, centers = cv2.kmeans(data, k, None, criteria, attempts, KMeansFlags)
+    
+    centers = np.uint8(centers)
+    segmented_img = centers[labels.flatten()]
+    segmented_img = segmented_img.reshape(image.shape)
+    
+    return segmented_img
+
+
+def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDiversity=0.2, maxEvolution=200, areaThresh=1.01, minMargin=0.003, edgeBlurSize=5):
+
+    mser = cv2.MSER_create(delta=delta,
+                           min_area=minArea,
+                           max_area=maxArea,
+                           max_variation=maxVariation,
+                           min_diversity=minDiversity,
+                           max_evolution=maxEvolution,
+                           area_threshold=areaThresh,
+                           min_margin=minMargin,
+                           edge_blur_size=edgeBlurSize)
+
+    msers, bboxes = mser.detectRegions(image)
+    return msers, bboxes
+
+
+def KNN(modelType=0, k=10):
+    knn_model = cv2.ml.KNearest_create()
+    
+    knn_model.setDefaultK(k)
+    
+    if modelType == 0:
+        isClassifier = True
+    elif modelType == 1:
+        isClassifier = False
+        
+    knn_model.setIsClassifier(isClassifier)
+    knn_model.setAlgorithmType(cv2.ml.KNEAREST_BRUTE_FORCE)
+    return knn_model
