@@ -1509,3 +1509,165 @@ def KNN(modelType=0, k=10):
     knn_model.setIsClassifier(isClassifier)
     knn_model.setAlgorithmType(cv2.ml.KNEAREST_BRUTE_FORCE)
     return knn_model
+
+
+def furierEnergyFeatures(f_transform):
+    f_transform_centered = np.fft.fftshift(f_transform)
+    magnitude_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+    power_spect = np.abs(magnitude_spectrum) ** 2
+    mean_pow = np.mean(power_spect)
+    variance_pow = np.var(power_spect)
+    max_pow = np.max(power_spect)
+    sum_pow = np.sum(power_spect)
+    height, width = power_spect.shape
+    low_freq_band = power_spect[:height // 4, :width // 4]
+    mid_freq_band = power_spect[height // 4:3 * height // 4, width // 4:3 * width // 4]
+    high_freq_band = power_spect[3 * height // 4:, 3 * width // 4:]
+    energyL = np.sum(low_freq_band)
+    energyM = np.sum(mid_freq_band)
+    energyH = np.sum(high_freq_band)
+
+
+
+    return (mean_pow, variance_pow, max_pow, sum_pow, 
+            energyL, energyM, energyH, 
+            power_spect)
+
+
+def fastFourierTransform(src, flags=cv2.DFT_COMPLEX_OUTPUT):
+    dft = cv2.dft(src.astype(np.float32), flags=flags)
+    dft_shift = np.fft.fftshift(dft)
+
+    if len(dft_shift.shape) == 3:
+        spectrum = 20 * np.log(cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1]))
+    elif len(dft_shift.shape) == 2:
+        spectrum = 20 * np.log(dft_shift)
+    else:
+        spectrum = dft_shift
+
+    return dft, dft_shift, spectrum
+
+
+
+def filterFft(src, customFilter=False, filter=None, filterType=0, kernelType=0, lowerBound=30, upperBound=60):
+    rows, cols, _ = src.shape
+    crow, ccol = rows // 2 , cols // 2  
+
+    mask = np.ones((rows, cols, 2), np.float32)
+
+    if customFilter:
+        mask[:, :, 0] = filter
+        mask[:, :, 1] = filter
+    
+    else:
+        if kernelType == 0: # gaussian
+            lp_kernel = cv2.getGaussianKernel(upperBound, -1)
+            lp_kernel = lp_kernel * lp_kernel.T
+            hp_kernel = cv2.getGaussianKernel(lowerBound, -1)
+            hp_kernel = hp_kernel * hp_kernel.T
+
+        elif kernelType == 1: # box
+            lp_kernel = np.ones((upperBound, upperBound), np.float32) / (upperBound * upperBound)
+            hp_kernel = np.ones((lowerBound, lowerBound), np.float32) / (lowerBound * lowerBound)
+
+        elif kernelType == 2: # hamming
+            lp_kernel = np.hamming(upperBound)[:, None] * np.hamming(upperBound)
+            hp_kernel = np.hamming(lowerBound)[:, None] * np.hamming(lowerBound)
+
+        elif kernelType == 3: # hanning
+            lp_kernel = np.hanning(upperBound)[:, None] * np.hanning(upperBound)
+            hp_kernel = np.hanning(lowerBound)[:, None] * np.hanning(lowerBound)
+
+        elif kernelType == 4: # circle
+            lp_kernel = np.zeros((upperBound, upperBound), np.float32)
+            hp_kernel = np.zeros((lowerBound, lowerBound), np.float32)
+            cv2.circle(lp_kernel, (upperBound//2, upperBound//2), upperBound//2, 1, -1)
+            cv2.circle(hp_kernel, (lowerBound//2, lowerBound//2), lowerBound//2, 1, -1)
+        
+
+        lp_kernel = lp_kernel / np.max(lp_kernel)  
+        hp_kernel = hp_kernel / np.max(hp_kernel)
+
+        if filterType == 0: # low pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            mask[:, :, 0] = lp_mask_full
+            mask[:, :, 1] = lp_mask_full
+
+        elif filterType == 1: # high pass
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+            mask[:, :, 0] = hp_mask_full
+            mask[:, :, 1] = hp_mask_full
+
+        elif filterType == 2: # band pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+            band_pass_mask = lp_mask_full * hp_mask_full
+            mask[:, :, 0] = band_pass_mask
+            mask[:, :, 1] = band_pass_mask
+        
+        elif filterType == 3: # stop pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+            stop_band_mask = 1 - (lp_mask_full * hp_mask_full)
+            mask[:, :, 0] = stop_band_mask
+            mask[:, :, 1] = stop_band_mask
+
+    dst = src * mask
+
+    return dst, mask[:, :, 0]
+
+
+
+def inverseFft(src):
+    f_ishift = np.fft.ifftshift(src)
+    dst = cv2.idft(f_ishift)
+    dst = cv2.magnitude(dst[:, :, 0], dst[:, :, 1])
+
+    dst = cv2.normalize(dst, None, 0, 255, cv2.NORM_MINMAX)
+    dst = np.uint8(dst)
+
+    return dst
+
+
+def pruning(binaryImage, pruneLength=2):
+    thinned_image = cv2.ximgproc.thinning(binaryImage)
+    pruned_image = thinned_image.copy()
+    kernel = np.ones((3, 3), dtype=np.uint8)
+    
+    while True:
+        neighbor_count = cv2.filter2D((pruned_image > 0).astype(np.uint8), -1, kernel)
+        prune_mask = (pruned_image == 255) & (neighbor_count <= pruneLength)
+        
+        if not np.any(prune_mask):
+            break
+        
+        pruned_image[prune_mask] = 0
+
+    return pruned_image, thinned_image
+
+
+def magnitudeFeatures(f_transform):
+
+    # Shift zero frequency component to the center
+    f_transform_centered = np.fft.fftshift(f_transform)
+
+    # Compute the magnitude spectrum
+    magn_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+
+    # Calculate individual features
+    mean_magn = np.mean(magn_spectrum)
+    var_magn = np.var(magn_spectrum)
+    max_magn = np.max(magn_spectrum)
+    sum_magn = np.sum(magn_spectrum)
+
+    return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
