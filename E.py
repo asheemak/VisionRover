@@ -563,7 +563,7 @@ def furierEnergyFeatures(f_transform):
             power_spect)    
 
 
-def LBP(image):
+def lbpFeatures(image):
     height, width = image.shape
     lbp = np.zeros((height, width), dtype=np.uint8)
 
