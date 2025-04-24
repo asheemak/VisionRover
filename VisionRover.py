@@ -1671,3 +1671,44 @@ def magnitudeFeatures(f_transform):
     sum_magn = np.sum(magn_spectrum)
 
     return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
+
+
+def LBP(image):
+    height, width = image.shape
+    lbp = np.zeros((height, width), dtype=np.uint8)
+
+    
+    cond = (image[:-1, :-1] >= image[1:, 1:])
+    lbp[1:, 1:] += 128 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, :] >= image[1:, :])
+    lbp[1:, :] += 64 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, 1:] >= image[1:, :width-1])
+    lbp[1:, :width-1] += 32 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, 1:] >= image[:, :width-1])
+    lbp[:, :width-1] += 16 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, 1:] >= image[:-1, :-1])
+    lbp[:-1, :-1] += 8 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :] >= image[:-1, :])
+    lbp[:-1, :] += 4 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :-1] >= image[:-1, 1:])
+    lbp[:-1, 1:] += 2 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, :-1] >= image[:, 1:])
+    lbp[:, 1:] += 1 * cond.astype(np.uint8)
+
+    return lbp
+
+
