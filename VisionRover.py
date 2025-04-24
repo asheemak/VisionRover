@@ -1673,7 +1673,7 @@ def magnitudeFeatures(f_transform):
     return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
 
 
-def LBP(image):
+def lbpFeatures(image):
     height, width = image.shape
     lbp = np.zeros((height, width), dtype=np.uint8)
 
