@@ -1713,10 +1713,17 @@ def LBP(image):
 
 
 def copyImage(image):
-	if isinstance(image, np.ndarray) and image.size > 0 and (len(image.shape) == 2 or (len(image.shape) == 3 and (image.shape[2] == 1 or image.shape[2] == 3 or image.shape[2] == 4))) and not np.issubdtype(image.dtype, np.str_):
-		img = image.copy()
-		return img
-	else:
-		raise ValueError("the input parameter is not an image")
+    if (
+        not isinstance(image, np.ndarray)
+        or image.size == 0
+        or (len(image.shape) != 2 and not (
+            len(image.shape) == 3 and image.shape[2] in (1, 3, 4)
+        ))
+        or np.issubdtype(image.dtype, np.str_)
+    ):
+        raise ValueError("the input parameter is not an image")
+	    
+    return image.copy()
+
 
 
