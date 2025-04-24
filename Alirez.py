@@ -419,14 +419,18 @@ def SVM(modelType=0, type=cv2.ml.SVM_C_SVC, kernelType=cv2.ml.SVM_RBF, classWeig
 
 
 
-def randomForest(maxDepth=10, minSampleCount=2, maxCategories=10):
+def randomForest(modelType=0, maxDepth=10, minSampleCount=2, regressionAccuracy=0.0, maxCategories=10, truncatePrunedTree=False, use1SERule=False):
 
-	# Create an RTrees instance
 	rf_model = cv2.ml.RTrees_create()
 
-	# Set the parameters
 	rf_model.setMaxDepth(maxDepth)
+	rf_model.setTruncatePrunedTree(truncatePrunedTree)
+	rf_model.setUse1SERule(use1SERule)
 	rf_model.setMinSampleCount(minSampleCount)
+	
+	if modelType == 1:
+		rf_model.setRegressionAccuracy(regressionAccuracy)
+		
 	rf_model.setMaxCategories(maxCategories)
 	rf_model.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
 

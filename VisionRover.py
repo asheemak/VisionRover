@@ -1400,3 +1400,330 @@ def concatV(src1: np.ndarray, src2: np.ndarray):
 
 def transpose(src: np.ndarray):
     return src.T
+
+
+def bfMatcher(descriptors1, descriptors2, method , k , normType):
+    bf = cv2.BFMatcher(normType=normType, crossCheck=False)
+    
+    if method == 1: # "match" method
+        matches = bf.match(descriptors1, descriptors2)
+        matches = sorted(matches, key=lambda x: x.distance)
+    elif method == 2: # "knn"method
+        matches = bf.knnMatch(descriptors1, descriptors2, k=k)
+        matches = sorted(matches, key=lambda x: x[0].distance if len(x) > 0 else float('inf'))
+
+    
+    return matches
+
+
+def mlp(layerSizes, activation, alpha, maxIter):
+
+    layer_sizes = np.array(layerSizes, dtype=np.int32)
+    mlp = cv2.ml.ANN_MLP_create()
+    mlp.setLayerSizes(layer_sizes)
+
+    # Set activation function
+    mlp.setActivationFunction(activation)
+    mlp.setTrainMethod(cv2.ml.ANN_MLP_BACKPROP)
+    mlp.setBackpropWeightScale(alpha)  # Equivalent to learning rate
+    mlp.setBackpropMomentumScale(0.0)  # Can be parameterized too
+
+    mlp.setTermCriteria((cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, int(maxIter), 1e-6))
+
+    return mlp
+
+
+
+def orbDetectCompute(image, nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, firstLevel=0, WTA_K=2, patchSize=31):
+    orb = cv2.ORB_create(
+        nfeatures=nfeatures,
+        scaleFactor=scaleFactor,
+        nlevels=nlevels,
+        edgeThreshold=edgeThreshold,
+        firstLevel=firstLevel,
+        WTA_K=WTA_K,
+        scoreType=cv2.ORB_HARRIS_SCORE,
+        patchSize=patchSize
+    )
+    # Detect keypoints and compute descriptors
+    keypoints, descriptors = orb.detectAndCompute(image, None)
+    return keypoints, descriptors
+
+
+
+def siftDetectCompute(image, nfeatures, nOctaveLayers, contrastThreshold, edgeThreshold, sigma):
+
+    sift = cv2.SIFT_create(
+        nfeatures=nfeatures,
+        nOctaveLayers=nOctaveLayers,
+        contrastThreshold=contrastThreshold,
+        edgeThreshold=edgeThreshold,
+        sigma=sigma
+    )
+
+    keypoints, descriptors = sift.detectAndCompute(image, None)
+    return keypoints, descriptors
+
+
+
+def kmeansSegmentation(image, k, criteria_eps, criteria_max_iter, attempts,KMeansFlags):
+
+    data = np.float32(image.reshape(-1, 1))
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, criteria_max_iter, criteria_eps)
+    #flags=cv2.KMEANS_RANDOM_CENTERS
+    ret, labels, centers = cv2.kmeans(data, k, None, criteria, attempts, KMeansFlags)
+    
+    centers = np.uint8(centers)
+    segmented_img = centers[labels.flatten()]
+    segmented_img = segmented_img.reshape(image.shape)
+    
+    return segmented_img
+
+
+def mser(image, delta=5, minArea=60, maxArea=14400, maxVariation=0.25, minDiversity=0.2, maxEvolution=200, areaThresh=1.01, minMargin=0.003, edgeBlurSize=5):
+
+    mser = cv2.MSER_create(delta=delta,
+                           min_area=minArea,
+                           max_area=maxArea,
+                           max_variation=maxVariation,
+                           min_diversity=minDiversity,
+                           max_evolution=maxEvolution,
+                           area_threshold=areaThresh,
+                           min_margin=minMargin,
+                           edge_blur_size=edgeBlurSize)
+
+    msers, bboxes = mser.detectRegions(image)
+    return msers, bboxes
+
+
+def KNN(modelType=0, k=10):
+    knn_model = cv2.ml.KNearest_create()
+    
+    knn_model.setDefaultK(k)
+    
+    if modelType == 0:
+        isClassifier = True
+    elif modelType == 1:
+        isClassifier = False
+        
+    knn_model.setIsClassifier(isClassifier)
+    knn_model.setAlgorithmType(cv2.ml.KNEAREST_BRUTE_FORCE)
+    return knn_model
+
+
+def furierEnergyFeatures(f_transform):
+    f_transform_centered = np.fft.fftshift(f_transform)
+    magnitude_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+    power_spect = np.abs(magnitude_spectrum) ** 2
+    mean_pow = np.mean(power_spect)
+    variance_pow = np.var(power_spect)
+    max_pow = np.max(power_spect)
+    sum_pow = np.sum(power_spect)
+    height, width = power_spect.shape
+    low_freq_band = power_spect[:height // 4, :width // 4]
+    mid_freq_band = power_spect[height // 4:3 * height // 4, width // 4:3 * width // 4]
+    high_freq_band = power_spect[3 * height // 4:, 3 * width // 4:]
+    energyL = np.sum(low_freq_band)
+    energyM = np.sum(mid_freq_band)
+    energyH = np.sum(high_freq_band)
+
+
+
+    return (mean_pow, variance_pow, max_pow, sum_pow, 
+            energyL, energyM, energyH, 
+            power_spect)
+
+
+def fastFourierTransform(src, flags=cv2.DFT_COMPLEX_OUTPUT):
+    dft = cv2.dft(src.astype(np.float32), flags=flags)
+    dft_shift = np.fft.fftshift(dft)
+
+    if len(dft_shift.shape) == 3:
+        spectrum = 20 * np.log(cv2.magnitude(dft_shift[:, :, 0], dft_shift[:, :, 1]))
+    elif len(dft_shift.shape) == 2:
+        spectrum = 20 * np.log(dft_shift)
+    else:
+        spectrum = dft_shift
+
+    return dft, dft_shift, spectrum
+
+
+
+def filterFft(src, customFilter=False, filter=None, filterType=0, kernelType=0, lowerBound=30, upperBound=60):
+    rows, cols, _ = src.shape
+    crow, ccol = rows // 2 , cols // 2  
+
+    mask = np.ones((rows, cols, 2), np.float32)
+
+    if customFilter:
+        mask[:, :, 0] = filter
+        mask[:, :, 1] = filter
+    
+    else:
+        if kernelType == 0: # gaussian
+            lp_kernel = cv2.getGaussianKernel(upperBound, -1)
+            lp_kernel = lp_kernel * lp_kernel.T
+            hp_kernel = cv2.getGaussianKernel(lowerBound, -1)
+            hp_kernel = hp_kernel * hp_kernel.T
+
+        elif kernelType == 1: # box
+            lp_kernel = np.ones((upperBound, upperBound), np.float32) / (upperBound * upperBound)
+            hp_kernel = np.ones((lowerBound, lowerBound), np.float32) / (lowerBound * lowerBound)
+
+        elif kernelType == 2: # hamming
+            lp_kernel = np.hamming(upperBound)[:, None] * np.hamming(upperBound)
+            hp_kernel = np.hamming(lowerBound)[:, None] * np.hamming(lowerBound)
+
+        elif kernelType == 3: # hanning
+            lp_kernel = np.hanning(upperBound)[:, None] * np.hanning(upperBound)
+            hp_kernel = np.hanning(lowerBound)[:, None] * np.hanning(lowerBound)
+
+        elif kernelType == 4: # circle
+            lp_kernel = np.zeros((upperBound, upperBound), np.float32)
+            hp_kernel = np.zeros((lowerBound, lowerBound), np.float32)
+            cv2.circle(lp_kernel, (upperBound//2, upperBound//2), upperBound//2, 1, -1)
+            cv2.circle(hp_kernel, (lowerBound//2, lowerBound//2), lowerBound//2, 1, -1)
+        
+
+        lp_kernel = lp_kernel / np.max(lp_kernel)  
+        hp_kernel = hp_kernel / np.max(hp_kernel)
+
+        if filterType == 0: # low pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            mask[:, :, 0] = lp_mask_full
+            mask[:, :, 1] = lp_mask_full
+
+        elif filterType == 1: # high pass
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+            mask[:, :, 0] = hp_mask_full
+            mask[:, :, 1] = hp_mask_full
+
+        elif filterType == 2: # band pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+            band_pass_mask = lp_mask_full * hp_mask_full
+            mask[:, :, 0] = band_pass_mask
+            mask[:, :, 1] = band_pass_mask
+        
+        elif filterType == 3: # stop pass
+            lp_mask_full = np.zeros((rows, cols), np.float32)
+            hp_mask_full = np.ones((rows, cols), np.float32)
+            lp_mask_full[crow-upperBound//2:crow+upperBound//2, ccol-upperBound//2:ccol+upperBound//2] = lp_kernel
+            hp_mask_full[crow-lowerBound//2:crow+lowerBound//2, ccol-lowerBound//2:ccol+lowerBound//2] = 1 - hp_kernel
+
+            stop_band_mask = 1 - (lp_mask_full * hp_mask_full)
+            mask[:, :, 0] = stop_band_mask
+            mask[:, :, 1] = stop_band_mask
+
+    dst = src * mask
+
+    return dst, mask[:, :, 0]
+
+
+
+def inverseFft(src):
+    f_ishift = np.fft.ifftshift(src)
+    dst = cv2.idft(f_ishift)
+    dst = cv2.magnitude(dst[:, :, 0], dst[:, :, 1])
+
+    dst = cv2.normalize(dst, None, 0, 255, cv2.NORM_MINMAX)
+    dst = np.uint8(dst)
+
+    return dst
+
+
+def pruning(binaryImage, pruneLength=2):
+    thinned_image = cv2.ximgproc.thinning(binaryImage)
+    pruned_image = thinned_image.copy()
+    kernel = np.ones((3, 3), dtype=np.uint8)
+    
+    while True:
+        neighbor_count = cv2.filter2D((pruned_image > 0).astype(np.uint8), -1, kernel)
+        prune_mask = (pruned_image == 255) & (neighbor_count <= pruneLength)
+        
+        if not np.any(prune_mask):
+            break
+        
+        pruned_image[prune_mask] = 0
+
+    return pruned_image, thinned_image
+
+
+def magnitudeFeatures(f_transform):
+
+    # Shift zero frequency component to the center
+    f_transform_centered = np.fft.fftshift(f_transform)
+
+    # Compute the magnitude spectrum
+    magn_spectrum = cv2.magnitude(f_transform_centered[:, :, 0],
+                                       f_transform_centered[:, :, 1])
+
+    # Calculate individual features
+    mean_magn = np.mean(magn_spectrum)
+    var_magn = np.var(magn_spectrum)
+    max_magn = np.max(magn_spectrum)
+    sum_magn = np.sum(magn_spectrum)
+
+    return mean_magn, var_magn, max_magn, sum_magn, magn_spectrum
+
+
+def LBP(image):
+    height, width = image.shape
+    lbp = np.zeros((height, width), dtype=np.uint8)
+
+    
+    cond = (image[:-1, :-1] >= image[1:, 1:])
+    lbp[1:, 1:] += 128 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, :] >= image[1:, :])
+    lbp[1:, :] += 64 * cond.astype(np.uint8)
+
+    
+    cond = (image[:-1, 1:] >= image[1:, :width-1])
+    lbp[1:, :width-1] += 32 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, 1:] >= image[:, :width-1])
+    lbp[:, :width-1] += 16 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, 1:] >= image[:-1, :-1])
+    lbp[:-1, :-1] += 8 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :] >= image[:-1, :])
+    lbp[:-1, :] += 4 * cond.astype(np.uint8)
+
+    
+    cond = (image[1:, :-1] >= image[:-1, 1:])
+    lbp[:-1, 1:] += 2 * cond.astype(np.uint8)
+
+    
+    cond = (image[:, :-1] >= image[:, 1:])
+    lbp[:, 1:] += 1 * cond.astype(np.uint8)
+
+    return lbp
+
+
+def copyImage(image):
+    if (
+        not isinstance(image, np.ndarray)
+        or image.size == 0
+        or (len(image.shape) != 2 and not (
+            len(image.shape) == 3 and image.shape[2] in (1, 3, 4)
+        ))
+        or np.issubdtype(image.dtype, np.str_)
+    ):
+        raise ValueError("the input parameter is not an image")
+	    
+    return image.copy()
+
+
+
